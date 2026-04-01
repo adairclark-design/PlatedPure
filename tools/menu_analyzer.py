@@ -171,7 +171,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             temperature=0.1,
             messages=[
                 {"role": "system", "content": system_prompt},
