@@ -104,7 +104,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: You are strictly forbidden from writing paragraphs like "Typically includes...". The UI renders the 'ingredients' array as chemical chips.
     5. CULINARY INFERENCE: Explain which specific additives from the 'ingredients' array match the MSG Danger Tiers. 
-    6. OUTPUT DENSITY: Generate a minimum of 15-20 realistic menu items for restaurants, including safe baselines like plain rice or plain beef patties.
+    6. STRICT MENU FIDELITY: If the DATA ACQUISITION SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', you must ONLY output the exact dishes provided in the BACKGROUND CONTEXT. Do not invent, pad, or add a single extra item. If the SOURCE is 'COMMERCIAL_SYNTHESIS', generate 8 to 12 of the most famous, literal menu items that belong exclusively to that specific restaurant. Do not hallucinate generic "safe" items like 'Plain beef patty' unless the restaurant is explicitly a burger joint.
     """
 
     final_output_schema = {
