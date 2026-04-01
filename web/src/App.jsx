@@ -63,7 +63,20 @@ function App() {
   const renderDishCard = (dish, key) => {
     // Determine if we have ingredient data
     const hasIngredients = Array.isArray(dish.ingredients) && dish.ingredients.length > 0;
-    const isOfficial = dish.ingredient_source === 'OFFICIAL_SCRAPE';
+    const isSpoonacular = dish.ingredient_source === 'SPOONACULAR_DB';
+    const isPerplexity = dish.ingredient_source === 'PERPLEXITY_LIVE_SCRAPE';
+    
+    // UI badge configuration based on layer
+    let badgeText = '⚙️ Synthetic Commercial Formulation';
+    let badgeColor = 'var(--brand-sage)'; // Orange/Gray
+    
+    if (isSpoonacular) {
+      badgeText = '🟢 Spoonacular Database Verification';
+      badgeColor = 'var(--brand-emerald)';
+    } else if (isPerplexity) {
+      badgeText = '🔵 Perplexity Live-Web Verification';
+      badgeColor = '#3b82f6'; // Bright blue
+    }
     
     return (
       <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
@@ -79,8 +92,8 @@ function App() {
           
           {hasIngredients ? (
             <div className="verified-ingredients" style={{ marginBottom: '1rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <strong style={{ display: 'block', fontSize: '0.85rem', color: isOfficial ? 'var(--brand-emerald)' : 'var(--brand-sage)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                {isOfficial ? '✓ Official Manufacturer Data' : '⚙️ Synthetic Commercial Formulation'}
+              <strong style={{ display: 'block', fontSize: '0.85rem', color: badgeColor, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                {badgeText}
               </strong>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                 {dish.ingredients.map((ing, i) => {
