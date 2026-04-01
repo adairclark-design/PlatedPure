@@ -97,7 +97,7 @@ function App() {
               <input
                 type="text"
                 className="search-input"
-                placeholder="e.g. Olive Garden or Doritos Cool Ranch"
+                placeholder="Search anything..."
                 value={restaurantName}
                 onChange={e => setRestaurantName(e.target.value)}
                 required
