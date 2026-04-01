@@ -6,9 +6,10 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
-  
+
   const handleSearch = async (e) => {
-    if (!restaurantName) return
+    e.preventDefault()
+    if (!restaurantName.trim()) return
 
     setLoading(true)
     setError(null)
@@ -40,7 +41,7 @@ function App() {
   }
 
   const getDishClass = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'safe':   return 'dish-safe'
       case 'unsafe': return 'dish-unsafe'
       default:       return 'dish-unknown'
@@ -48,32 +49,31 @@ function App() {
   }
 
   const getBadgeClass = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'safe':   return 'status-badge-safe'
       case 'unsafe': return 'status-badge-unsafe'
       default:       return 'status-badge-unknown'
     }
   }
 
-  // Pre-filter results if they exist
-  const safeDishes = results?.results?.filter(d => d.status.startsWith('SAFE')) || []
-  const unknownDishes = results?.results?.filter(d => d.status.includes('UNKNOWN')) || []
-  const unsafeDishes = results?.results?.filter(d => d.status.includes('UNSAFE')) || []
+  const safeDishes    = results?.results?.filter(d => d.status.startsWith('SAFE'))    || []
+  const unknownDishes = results?.results?.filter(d => d.status.includes('UNKNOWN'))   || []
+  const unsafeDishes  = results?.results?.filter(d => d.status.includes('UNSAFE'))    || []
 
-  // Helper component to dry up the Safe/Unknown rendering logic
-  const renderDishCard = (dish, idx) => (
-    <div key={idx} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
+  const renderDishCard = (dish, key) => (
+    <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
       <div className="dish-header">
         <h3 className="dish-name">{dish.dish_name}</h3>
         <span className={`dish-status ${getBadgeClass(dish.status)}`}>
           {dish.status}
         </span>
       </div>
-      
+
       <div className="research-log-box">
         <div className="log-header">🛡️ AI MATRIX LOG</div>
         <p className="log-content">{dish.research_log || dish.reasoning}</p>
       </div>
+
       {dish.confidence && (
         <div className="confidence-tag">
           {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
@@ -83,7 +83,8 @@ function App() {
   )
 
   return (
-    <div className="container">      <header className="header">
+    <div className="container">
+      <header className="header">
         <h1>Additive Detective</h1>
         <div className="header-badge">Universal Scanning Engine</div>
       </header>
@@ -91,7 +92,6 @@ function App() {
       <main>
         <div className="glass-card search-form">
           <form onSubmit={handleSearch}>
-            {/* Universal Search Field */}
             <div className="input-group">
               <div className="section-label">Search Restaurant or Grocery Brand</div>
               <input
@@ -116,7 +116,7 @@ function App() {
           {error && <div className="error-msg">{error}</div>}
         </div>
 
-        {/* Loading */}
+        {/* Loading State */}
         {loading && (
           <div className="loading-skeleton">
             <h3>Gathering Menu Context &amp; Reasoning...</h3>
@@ -127,6 +127,8 @@ function App() {
         {/* Results */}
         {results && !loading && (
           <div style={{ marginTop: '2rem' }}>
+
+            {/* Telemetry Dashboard */}
             {results.telemetry && (
               <div className="telemetry-dashboard glass-card">
                 <div className="telemetry-title">⚡ Deep Scrape Intelligence Protocol</div>
@@ -147,6 +149,7 @@ function App() {
               </div>
             )}
 
+            {/* Restaurant Summary */}
             <div className="results-header glass-card">
               <h2>{results.restaurant?.name}</h2>
               <p className="context">{results.restaurant?.search_context}</p>
@@ -156,7 +159,9 @@ function App() {
               {/* ✅ Safe Options */}
               {safeDishes.length > 0 && (
                 <div className="dish-tier">
-                  <h3 className="tier-header" style={{ color: 'var(--brand-emerald)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-emerald)', paddingBottom: '0.5rem' }}>✅ Top Safe Recommendations</h3>
+                  <h3 className="tier-header" style={{ color: 'var(--brand-emerald)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-emerald)', paddingBottom: '0.5rem' }}>
+                    ✅ Top Safe Recommendations
+                  </h3>
                   {safeDishes.map((dish, idx) => renderDishCard(dish, `safe-${idx}`))}
                 </div>
               )}
@@ -169,18 +174,22 @@ function App() {
                 </div>
               )}
 
-              {/* 💬 Unknown / Conditionals */}
+              {/* 💬 Proceed With Caution */}
               {unknownDishes.length > 0 && (
                 <div className="dish-tier" style={{ marginTop: '2rem' }}>
-                  <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>💬 Proceed With Caution</h3>
+                  <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>
+                    💬 Proceed With Caution
+                  </h3>
                   {unknownDishes.map((dish, idx) => renderDishCard(dish, `unk-${idx}`))}
                 </div>
               )}
 
-              {/* ⛔ Unsafe Items (Condensed) */}
+              {/* ⛔ Unsafe Items */}
               {unsafeDishes.length > 0 && (
                 <div className="dish-tier" style={{ marginTop: '2.5rem' }}>
-                  <h3 className="tier-header" style={{ color: 'var(--unsafe)', marginBottom: '1rem', borderBottom: '2px solid var(--unsafe)', paddingBottom: '0.5rem' }}>⛔ Unsafe Items</h3>
+                  <h3 className="tier-header" style={{ color: 'var(--unsafe)', marginBottom: '1rem', borderBottom: '2px solid var(--unsafe)', paddingBottom: '0.5rem' }}>
+                    ⛔ Unsafe Items
+                  </h3>
                   <div className="unsafe-condensed-list glass-card">
                     {unsafeDishes.map((dish, idx) => (
                       <div className="unsafe-list-item" key={`unsf-${idx}`}>
