@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI
 from duckduckgo_search import DDGS
@@ -10,77 +12,103 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 client = OpenAI()
 
+def fetch_url_text(url: str, max_chars: int = 5000) -> str:
+    """Attempts to download raw HTML and extract text from a URL."""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        resp = requests.get(url, headers=headers, timeout=4)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            text = soup.get_text(separator=' ', strip=True)
+            return " ".join(text.split())[:max_chars]
+        return ""
+    except Exception:
+        return ""
+
 def fetch_restaurant_context(restaurant_name: str, location: str) -> str:
     """
-    Uses DuckDuckGo to extract immediate web snippets containing menu and review data.
+    Deep Scrape Engine: Runs multi-vector DDGS queries and physically crawls URLs.
     """
-    search_query = f'"{restaurant_name}" {location} menu reviews'
-    print(f"🔍 Searching context for: {search_query}")
+    queries = [
+        f'"{restaurant_name}" {location} menu ingredients allergy',
+        f'"{restaurant_name}" {location} (MSG OR "yeast extract" OR allergy) site:yelp.com OR site:tripadvisor.com'
+    ]
     
-    try:
-        results = DDGS().text(search_query, max_results=5)
-        context_snippets = []
-        for res in results:
-            context_snippets.append(f"Title: {res.get('title')}\nSnippet: {res.get('body')}")
-        
-        return "\n\n".join(context_snippets)
-    except Exception as e:
-        print(f"❌ Web Search Error: {e}")
-        return "No external context found."
+    context_snippets = []
+    urls_scraped = 0
+    
+    for query in queries:
+        print(f"🔍 Deep searching: {query}")
+        try:
+            results = list(DDGS().text(query, max_results=4))
+            for res in results:
+                # Always append the snippet as a baseline
+                context_snippets.append(f"Snippet: {res.get('title')} - {res.get('body')}")
+                
+                # Attempt physical HTML crawl if we haven't hit the limit
+                url = res.get('href', '')
+                if url and urls_scraped < 3:
+                    html_text = fetch_url_text(url)
+                    if html_text:
+                        context_snippets.append(f"--- DEEP CRAWL OF {url} ---\n{html_text}\n--- END CRAWL ---")
+                        urls_scraped += 1
+        except Exception as e:
+            print(f"❌ Web Search Error on '{query}': {e}")
+            
+    return "\n\n".join(context_snippets)
 
 def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> dict:
     """
-    Combines web snippets with OpenAI reasoning to build the safe/unsafe payload.
+    Combines deep scraped web context with OpenAI reasoning to build the safe/unsafe payload.
     """
     context = fetch_restaurant_context(restaurant_name, location)
     
     system_prompt = """
-    You are an elite, specialized "MSG Detection Engine" designed to protect patients with severe Monosodium Glutamate intolerances. Your singular job is to analyze restaurant menus and flag any potential sources of MSG or its hidden aliases with extreme precision.
+    You are an elite, specialized "MSG Detection Engine" designed to protect patients with severe Monosodium Glutamate intolerances. Your singular job is to analyze restaurant menus and flag any potential sources of MSG or its hidden aliases with pinpoint accuracy.
     
-    THE ULTIMATE MSG LEXICON (Hidden Glutamate Precursors):
-    Restaurants NEVER list "MSG". You MUST aggressively flag dishes likely to contain ANY of the following hidden aliases:
-    - Guaranteed MSG: Yeast Extract, Autolyzed Yeast, Torula Yeast, Hydrolyzed Vegetable Protein (HVP), Hydrolyzed Plant Protein, Calcium Caseinate, Sodium Caseinate, Glutamic Acid.
-    - Highly Probable Dangers (Commercial/Third-Party items): Natural Flavors, Natural Chicken/Beef Flavoring, Bouillon Cubes, Seasoning Salt, Commercial Soy Sauce, Commercial Mayonnaise, Pre-made Marinades, Ranch Dressing powder, "Spice Mixes".
+    THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
+    Restaurants NEVER list "MSG". You MUST aggressively cross-reference ingredients against these 3 Danger Tiers:
+    - [TIER 1] GUARANTEED MSG (Manufactured Free Glutamate): Monosodium Glutamate (E621), Monopotassium Glutamate (E622), Calcium/Monoammonium/Magnesium/Natrium Glutamate, Autolyzed Yeast, Yeast Extract, Yeast Food, Yeast Nutrient, Torula Yeast, Hydrolyzed Vegetable/Plant/Soy/Wheat/Pea/Corn Protein, Calcium Caseinate, Sodium Caseinate, Textured Vegetable Protein, Gelatin, Vetsin, Ajinomoto.
+    - [TIER 2] HIGH PROBABILITY (Formed during processing): "Natural Flavors", "Natural Chicken/Beef Flavoring", "Artificial Flavors", Bouillon, Broth, Stock, Maltodextrin, Malt Extract, Barley Malt, Carrageenan (E407), Pectin (E440), Citric Acid (E330), Soy Sauce, Soy Sauce Extract, Protease Enzymes, "Enzyme-Modified".
+    - [TIER 3] ENHANCERS (Indicators MSG is present): Disodium 5'-guanylate (E627), Disodium 5'-inosinate (E631), Disodium 5'-ribonucleotides (E635).
     
     HYBRID RECONSTRUCTION COMMAND:
-    You MUST output a minimum of 10-12 realistic menu items for this restaurant.
-    1. First, analyze all dishes in the Web Context Snippets.
-    2. If the snippets lack 10-12 items, YOU MUST construct the remainder using your latent culinary knowledge of this physical restaurant (or exact cuisine template) to ensure a comprehensive menu sweep.
+    You MUST output an exhaustive minimum of 15-20 realistic menu items. Do NOT just list dangerous dishes. Deliberately seek out and generate "borderline" or simple dishes (like steamed veggies, plain meats, simple salads) so the user possesses a massive playbook of "Proceed With Caution" (Maybe Safe) options to negotiate with the server using.
     
     CRITICAL BEHAVIORAL RULES:
-    1. STRICTNESS: Bias heavily toward "PROCEED WITH CAUTION (UNKNOWN)" for any dish relying on a savory sauce, dry rub, or soup broth. 90% of restaurant sauces are sourced from commercial buckets containing Yeast Extract.
-    2. THE SCRATCH-MADE RULE: Unless it's a high-end scratch kitchen, assume sauces are pre-packaged.
-    3. VALIDATION SCRIPTS: For ANY dish marked 'UNKNOWN' or 'SAFE', you MUST provide 1-3 highly specific validation_questions for the server. (e.g., "Is the BBQ sauce house-made from raw ingredients or from a commercial supplier?", "Does the dry rub list Yeast Extract or Hydrolyzed Protein?")
-    4. You must respond with valid JSON matching the exact schema provided.
+    1. STRICTNESS: Bias heavily toward "UNKNOWN (Proceed With Caution)". 90% of restaurant savory sauces, dry rubs, and soups use commercial buckets containing Yeast Extract.
+    2. THE SCRATCH-MADE RULE: Unless explicitly confirmed as a high-end scratch kitchen, assume sauces/rubs are pre-packaged.
+    3. VALIDATION SCRIPTS: For every UNKNOWN or SAFE dish, provide 1-3 highly specific validation_questions interrogating about Tier 1/2 aliases. (e.g., "Does the dry rub contain Yeast Extract or Hydrolyzed Protein?", "Is the sauce made strictly from scratch, or does the commercial base contain Natural Flavors?")
+    4. You must respond with valid JSON matching the exact schema.
     
     OUTPUT SCHEMA:
     {
       "restaurant": {
         "name": "<restaurant_name>",
-        "search_context": "<brief summary of what you found online regarding their ingredient sourcing or general warnings>"
+        "search_context": "<brief summary of the Deep Scrape findings regarding their ingredient sourcing>"
       },
       "results": [
         {
           "dish_name": "<name>",
           "status": "SAFE" | "UNSAFE" | "UNKNOWN",
           "flagged_by": ["MSG Scanner"],
-          "reasoning": "<why it's unsafe/unknown, explicitly citing the specific ingredient from the MSG Lexicon you suspect is present>",
+          "reasoning": "<why it's unsafe/unknown, explicitly citing the specific Tier 1/Tier 2 chemical from the Database you suspect>",
           "validation_questions": ["<Question 1 for the server>", "<Question 2 for the server>"],
           "confidence": "HIGH" | "LOW"
         }
       ],
-      "disclaimer": "This analysis is AI-generated and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly. ALWAYS physically verify with your server using the provided questions."
+      "disclaimer": "This analysis is AI-generated using Deep Web Scraping and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly. ALWAYS physically verify with your server using the provided questions."
     }
     """
     
     user_prompt = f"""
     Restaurant: {restaurant_name} ({location})
-    Task: Exhaustive hidden MSG sweep.
+    Task: Exhaustive hidden MSG sweep (15-20 items minimum).
     
-    Web Context Snippets:
+    Deep Web Context (Reviews & Menus):
     {context}
     
-    Act as the MSG Detection Engine. Reconstruct 10-12 items and output pure JSON.
+    Act as the MSG Detection Engine. Reconstruct 15-20 items and output pure JSON.
     """
 
     print("🧠 Analyzing context with OpenAI...")
