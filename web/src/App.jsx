@@ -84,10 +84,11 @@ function App() {
           {dish.status}
         </span>
       </div>
-      <p className="dish-reasoning">{dish.reasoning}</p>
       
-
-
+      <div className="research-log-box">
+        <div className="log-header">🛡️ AI MATRIX LOG</div>
+        <p className="log-content">{dish.research_log || dish.reasoning}</p>
+      </div>
       {dish.confidence && (
         <div className="confidence-tag">
           {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
@@ -178,6 +179,26 @@ function App() {
         {/* Results */}
         {results && !loading && (
           <div style={{ marginTop: '2rem' }}>
+            {results.telemetry && (
+              <div className="telemetry-dashboard glass-card">
+                <div className="telemetry-title">⚡ Deep Scrape Intelligence Protocol</div>
+                <div className="telemetry-metrics">
+                  <div className="metric">
+                    <span className="metric-icon">🌐</span>
+                    <strong>{results.telemetry.urls_crawled || 0}</strong> Local URLs Crawled
+                  </div>
+                  <div className="metric">
+                    <span className="metric-icon">📄</span>
+                    <strong>{results.telemetry.chars_scraped?.toLocaleString() || 0}</strong> Review Characters Ingested
+                  </div>
+                  <div className="metric" style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1rem' }}>
+                    <span className="metric-icon">🧪</span>
+                    <strong>{results.telemetry.chemicals_checked || 32}</strong> FDA Chemical Loopholes Checked
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="results-header glass-card">
               <h2>{results.restaurant?.name}</h2>
               <p className="context">{results.restaurant?.search_context}</p>
@@ -216,7 +237,7 @@ function App() {
                     {unsafeDishes.map((dish, idx) => (
                       <div className="unsafe-list-item" key={`unsf-${idx}`}>
                         <div className="unsafe-name"><strong>{dish.dish_name}</strong></div>
-                        <div className="unsafe-reason">{dish.reasoning}</div>
+                        <div className="unsafe-reason">{dish.research_log || dish.reasoning}</div>
                       </div>
                     ))}
                   </div>

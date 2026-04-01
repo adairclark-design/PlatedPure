@@ -539,3 +539,80 @@
   font-weight: 800;
   letter-spacing: 0.5px;
 }
+
+/* --- AI RESEARCH LOG & TELEMETRY DASHBOARD --- */
+
+.telemetry-dashboard {
+  background: rgba(10, 10, 15, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+}
+
+.telemetry-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--brand-amber);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.telemetry-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.metric strong {
+  font-size: 1.3rem;
+  color: white;
+  font-family: monospace;
+}
+
+.research-log-box {
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 3px solid var(--brand-amber);
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.log-header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 0.5rem;
+}
+
+.log-content {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.9);
+}
+
+@media (max-width: 600px) {
+  .telemetry-metrics {
+    flex-direction: column;
+  }
+  .metric {
+    border-left: none !important;
+    padding-left: 0 !important;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .metric:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+}
