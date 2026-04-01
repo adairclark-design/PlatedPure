@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import requests
+import fitz  # PyMuPDF
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -12,151 +13,248 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 client = OpenAI()
 
-def fetch_url_text(url: str, max_chars: int = 5000) -> str:
-    """Attempts to download raw HTML and extract text from a URL."""
+def search_web(query: str, max_results: int = 5) -> str:
+    """Tool: Searches the web and returns titles, text, and URLs."""
+    print(f"🤖 Agent Action: Searching web for '{query}'")
+    try:
+        results = list(DDGS().text(query, max_results=max_results))
+        return json.dumps(results)
+    except Exception as e:
+        return json.dumps({"error": f"Search failed: {e}"})
+
+def read_url(url: str) -> str:
+    """Tool: Downloads and extracts text from a given URL, including PDFs."""
+    print(f"🤖 Agent Action: Reading URL '{url}'")
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        resp = requests.get(url, headers=headers, timeout=4)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            text = soup.get_text(separator=' ', strip=True)
-            return " ".join(text.split())[:max_chars]
-        return ""
-    except Exception:
-        return ""
-
-def fetch_restaurant_context(search_query: str, location: str) -> dict:
-    """
-    Deep Scrape Engine: Runs multi-vector DDGS queries for both restaurants and grocery products.
-    """
-    queries = [
-        f'"{search_query}" "ingredients" (nutrition OR allergen OR "contains") exact list',
-        f'"{search_query}" (site:menustat.org OR site:fooducate.com OR site:smartlabel.org) ingredients',
-        f'"{search_query}" {location} (MSG OR "yeast extract") reviews'
-    ]
-    
-    context_snippets = []
-    urls_scraped = 0
-    total_chars = 0
-    
-    for query in queries:
-        print(f"🔍 Deep searching: {query}")
-        try:
-            results = list(DDGS().text(query, max_results=4))
-            for res in results:
-                # Always append the snippet as a baseline
-                snippet_text = f"Snippet: {res.get('title')} - {res.get('body')}"
-                context_snippets.append(snippet_text)
-                total_chars += len(snippet_text)
-                
-                # Attempt physical HTML crawl if we haven't hit the limit
-                url = res.get('href', '')
-                if url and urls_scraped < 3:
-                    html_text = fetch_url_text(url)
-                    if html_text:
-                        context_snippets.append(f"--- DEEP CRAWL OF {url} ---\n{html_text}\n--- END CRAWL ---")
-                        total_chars += len(html_text)
-                        urls_scraped += 1
-        except Exception as e:
-            print(f"❌ Web Search Error on '{query}': {e}")
+        resp = requests.get(url, headers=headers, timeout=8)
+        
+        if resp.status_code != 200:
+            return json.dumps({"error": f"HTTP {resp.status_code}"})
             
-    return {
-        "text": "\n\n".join(context_snippets),
-        "urls": urls_scraped,
-        "chars": total_chars
-    }
+        # PDF parsing
+        if 'pdf' in resp.headers.get('Content-Type', '').lower() or url.lower().endswith('.pdf'):
+            try:
+                doc = fitz.open(stream=resp.content, filetype='pdf')
+                # Read first 12 pages only to prevent token explosion
+                text = "\n".join([doc[i].get_text() for i in range(min(12, len(doc)))])
+                return json.dumps({"type": "pdf", "text": text[:15000]})
+            except Exception as pdf_e:
+                return json.dumps({"error": f"PDF parse failed: {pdf_e}"})
+                
+        # HTML text parsing
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        text = soup.get_text(separator=' ', strip=True)
+        return json.dumps({"type": "html", "text": " ".join(text.split())[:10000]})
+        
+    except requests.Timeout:
+        return json.dumps({"error": "Request timed out"})
+    except Exception as e:
+        return json.dumps({"error": f"Read failed: {e}"})
 
 def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> dict:
     """
-    Combines deep scraped web context with OpenAI reasoning to build the safe/unsafe payload.
+    Agentic Web Researcher Engine. Actively uses tools to hunt down exact PDF/HTML ingredient lists.
     """
-    context_data = fetch_restaurant_context(restaurant_name, location)
-    
     system_prompt = """
-    You are an elite, specialized "MSG Detection Engine" designed to protect patients with severe Monosodium Glutamate intolerances. Your singular job is to analyze restaurant menus and flag any potential sources of MSG or its hidden aliases with pinpoint accuracy.
+    You are an elite, autonomous Agentic Web Crawler designed to protect patients with severe Monosodium Glutamate intolerances.
     
+    You have access to two tools: `search_web` and `read_url`. 
+    
+    YOUR MISSION: 
+    1. DO NOT GUESS INGREDIENTS. 
+    2. You must actively search for the OFFICIAL ingredient list for the target restaurant/brand (e.g. search for "restaurant name official ingredients PDF" or "restaurant name allergen nutrition guide").
+    3. If you find a promising URL (like a PDF or an official site), you MUST use `read_url` to download its text.
+    4. Keep iterating (searching and reading) until you find the exact ingredients for their menu, or until you are absolutely certain the data is not publicly available.
+
     THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
-    Restaurants NEVER list "MSG". You MUST aggressively cross-reference ingredients against these 3 Danger Tiers:
-    - [TIER 1] GUARANTEED MSG (Manufactured Free Glutamate): Monosodium Glutamate (E621), Monopotassium Glutamate (E622), Calcium/Monoammonium/Magnesium/Natrium Glutamate, Autolyzed Yeast, Yeast Extract, Yeast Food, Yeast Nutrient, Torula Yeast, Hydrolyzed Vegetable/Plant/Soy/Wheat/Pea/Corn Protein, Calcium Caseinate, Sodium Caseinate, Textured Vegetable Protein, Gelatin, Vetsin, Ajinomoto.
-    - [TIER 2] HIGH PROBABILITY (Formed during processing): "Natural Flavors", "Natural Chicken/Beef Flavoring", "Artificial Flavors", Bouillon, Broth, Stock, Maltodextrin, Malt Extract, Barley Malt, Carrageenan (E407), Pectin (E440), Citric Acid (E330), Soy Sauce, Soy Sauce Extract, Protease Enzymes, "Enzyme-Modified".
-    - [TIER 3] ENHANCERS (Indicators MSG is present): Disodium 5'-guanylate (E627), Disodium 5'-inosinate (E631), Disodium 5'-ribonucleotides (E635).
-    
-    HYBRID RECONSTRUCTION COMMAND:
-    Condition 1 (Restaurant Context): If the user searched for a Restaurant, fast-food chain, casual dining brand, or any place where humans eat (e.g. "Panda Express", "Olive Garden", "Chipotle", "local sushi bar"), you MUST output an exhaustive MINIMUM of 15-20 realistic menu items. Do NOT confuse a restaurant chain with a grocery product. Deliberately seek out "borderline" or simple dishes (steamed veggies, plain rice, fresh fruit) so the user has a massive playbook of "Proceed With Caution" AND genuinely SAFE options. For items that are verifiably plain, unprocessed, or have publicly confirmed ingredient lists with no MSG aliases, you MUST mark them SAFE with HIGH confidence. Do not reflexively mark everything UNKNOWN — that makes the tool useless.
-    Condition 2 (Grocery Product Context): If the user searched for a specific packaged consumer product intended to be bought off a shelf (e.g. "Doritos Cool Ranch", "Heinz Ketchup", "Campbell's Chicken Noodle Soup"), analyze that specific product. DO NOT invent a 15-item menu. Instead, output 4-5 results: the searched product first, then 3-4 Alternative Brand options or Flavor Variants.
+    - [TIER 1] GUARANTEED MSG: Monosodium Glutamate (E621), Yeast Extract, Autolyzed Yeast, Hydrolyzed Veg/Soy Protein, Calcium Caseinate, Torula Yeast.
+    - [TIER 2] HIGH PROBABILITY: Natural Flavors, Artificial Flavors, Bouillon, Broth, Maltodextrin, Pectin, Soy Sauce.
+    - [TIER 3] ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
     
     CRITICAL BEHAVIORAL RULES:
-    1. STRICT EVIDENCE REPORTING: For every single dish, you must now separate your analysis into two distinct fields: 'verified_ingredients' and 'culinary_inference'.
-    2. VERIFIED INGREDIENTS: If and ONLY IF the deep scan returned an exact, verifiable list of ingredients for the dish, provide them as a comma-separated array of strings in 'verified_ingredients'. If the exact ingredients are NOT found in the text, this array MUST be empty []. DO NOT hallucinate ingredients into this list.
-    3. CULINARY INFERENCE: Use this field to explain the risk. If you have verified ingredients, explain exactly which ones match the MSG Danger Tiers. If the 'verified_ingredients' array is empty, explicitly state "Official exact ingredients unavailable." and then explain the standard culinary preparation risks (e.g., why American-Chinese Chow Mein typically contains Soy Sauce).
-    4. BALANCED STRICTNESS: Bias toward "UNKNOWN" for savory sauces, dry rubs, and soups. However, genuinely plain items (steamed rice, whole fruit, packaged items with a clean label) MUST be marked SAFE with HIGH confidence. Never mark a dish UNKNOWN just because you lack information - investigate and reason carefully based on culinary norms.
-    5. Output valid JSON matching the exact schema. NEVER use the word "Tier" in your final output text.
-    
-    OUTPUT SCHEMA:
-    {
-      "telemetry": {
-        "chars_scraped": <integer value of total chars>,
-        "urls_crawled": <integer value of urls crawled>,
-        "chemicals_checked": 32
-      },
-      "restaurant": {
-        "name": "<restaurant_name>",
-        "search_context": "<brief summary of the Deep Scrape findings regarding their ingredient sourcing and transparency>"
-      },
-      "results": [
-        {
-          "dish_name": "<name>",
-          "status": "SAFE" | "UNSAFE" | "UNKNOWN",
-          "flagged_by": ["MSG Scanner"],
-          "verified_ingredients": ["<ingredient_1>", "<ingredient_2>"] | [],
-          "culinary_inference": "<Explanation of verified ingredients, OR statement that ingredients are hidden followed by culinary risk analysis>",
-          "confidence": "HIGH" | "LOW"
-        }
-      ],
-      "disclaimer": "This analysis is an investigative guide. Unlisted ingredients and third-party commercial sauces change constantly."
-    }
-    """
-    
-    user_prompt = f"""
-    Search Target: {restaurant_name} (Region Context: {location})
-    Task: Identify if this is a Restaurant or Grocery Product and execute the appropriate HYBRID RECONSTRUCTION COMMAND logic.
-    
-    Telemetry Data:
-    URLs Crawled: {context_data['urls']}
-    Total Characters Extracted: {context_data['chars']}
-    
-    Deep Web Context (Reviews & Menus):
-    {context_data['text']}
-    
-    Act as the MSG Detection Engine. Output the exact telemetry data provided above, reconstruct the requested items using technical research logs, and output pure JSON.
+    1. STRICT EVIDENCE REPORTING: For every single dish, separate your analysis into 'verified_ingredients' and 'culinary_inference'.
+    2. VERIFIED INGREDIENTS: If and ONLY IF you retrieved an exact, verifiable list of ingredients using your tools, put them as an array of strings in 'verified_ingredients'. If exact data was hidden or not found, this array MUST be empty []. DO NOT hallucinate.
+    3. CULINARY INFERENCE: Explain the risk. If you have verified ingredients, explain exactly which ones match the MSG Danger Tiers. If 'verified_ingredients' is empty, explicitly state "Official exact ingredients unavailable." and then explain standard culinary preparation risks.
+    4. You MUST output a minimum of 15-20 realistic menu items for restaurants (including safe baseline items like plain white rice), and 4-5 items for grocery brands.
     """
 
-    print("🧠 Analyzing context with OpenAI...")
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o",  # Can drop to gpt-4o-mini for extreme cost savings
-            temperature=0.1, # Keep strictly deterministic and risk-averse
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            response_format={ "type": "json_object" }
-        )
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "search_web",
+                "description": "Searches the internet and returns titles, URL links, and text snippets. Use this to find official ingredient PDFs or nutrition pages.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "The search query (e.g. 'Panda Express official ingredients filetype:pdf')"}
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read_url",
+                "description": "Downloads the full text content from a specific URL. Supports both HTML websites and direct PDF links.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "description": "The full HTTPS URL to read"}
+                    },
+                    "required": ["url"]
+                }
+            }
+        }
+    ]
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Execute an aggressive search for exact ingredient data for: {restaurant_name} (Location context: {location}). Once you have sufficient unstructured data from your tools, compile your final JSON payload matching the OUTPUT SCHEMA documented previously."}
+    ]
+
+    
+    final_output_schema = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "analysis_results",
+            "strict": True,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "telemetry": {
+                        "type": "object",
+                        "properties": {
+                            "chars_scraped": {"type": "integer"},
+                            "urls_crawled": {"type": "integer"},
+                            "chemicals_checked": {"type": "integer"}
+                        },
+                        "required": ["chars_scraped", "urls_crawled", "chemicals_checked"],
+                        "additionalProperties": False
+                    },
+                    "restaurant": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "search_context": {"type": "string"}
+                        },
+                        "required": ["name", "search_context"],
+                        "additionalProperties": False
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dish_name": {"type": "string"},
+                                "status": {"type": "string", "enum": ["SAFE", "UNSAFE", "UNKNOWN"]},
+                                "flagged_by": {
+                                    "type": "array",
+                                    "items": {"type": "string"}
+                                },
+                                "verified_ingredients": {
+                                    "type": "array",
+                                    "items": {"type": "string"}
+                                },
+                                "culinary_inference": {"type": "string"},
+                                "confidence": {"type": "string", "enum": ["HIGH", "LOW"]}
+                            },
+                            "required": ["dish_name", "status", "flagged_by", "verified_ingredients", "culinary_inference", "confidence"],
+                            "additionalProperties": False
+                        }
+                    },
+                    "disclaimer": {"type": "string"}
+                },
+                "required": ["telemetry", "restaurant", "results", "disclaimer"],
+                "additionalProperties": False
+            }
+        }
+    }
+
+    print("🚀 Initiating Autonomous PDF & Web Crawler Agent...")
+    urls_crawled = 0
+    chars_scraped = 0
+    
+    # We allow the agent up to 6 iterations to use tools before forcing an answer.
+    for i in range(6):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                temperature=0.1,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+            )
+            
+            message = response.choices[0].message
+            # If the model didn't call a tool, it generated its final text response based on its instructions, but we need it in JSON.
+            # We'll handle forcing JSON format if it finishes early. Actually, we should just let it output the final response format if we set response_format.
+            # But OpenAI prevents combining tool_choice auto with json_schema in some cases. It's safer to separate the loop and the final compilation.
+            pass
+            
+        except Exception as e:
+            print(f"❌ OpenAI Error: {e}")
+            sys.exit(1)
+
+        # Append assistant's message (which contains tool calls or text)
+        messages.append(message)
         
-        return json.loads(response.choices[0].message.content)
+        if not getattr(message, "tool_calls", None):
+            # No tool calls means the agent has decided it's done gathering information.
+            break
+
+        # Execute tool calls
+        for tool_call in message.tool_calls:
+            function_name = tool_call.function.name
+            args = json.loads(tool_call.function.arguments)
+            
+            if function_name == "search_web":
+                tool_result = search_web(query=args.get("query"))
+                chars_scraped += len(tool_result)
+            elif function_name == "read_url":
+                tool_result = read_url(url=args.get("url"))
+                chars_scraped += len(tool_result)
+                urls_crawled += 1
+            else:
+                tool_result = json.dumps({"error": "Unknown tool"})
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": tool_result
+            })
+
+    # FINAL COMPILATION PHASE: Agent has gathered data, now force it to output JSON matching the strict schema.
+    print("🧠 Forcing Agent to compile findings into Strict Schema...")
+    messages.append({
+        "role": "user", 
+        "content" : "Data gathering phase complete. Generate the final exact JSON payload conforming STRICTLY to the MSG schema. Include ALL verified ingredients you discovered. Do not call any more tools."
+    })
+    
+    try:
+        final_response = client.chat.completions.create(
+            model="gpt-4o",
+            temperature=0.1,
+            messages=messages,
+            response_format=final_output_schema
+        )
+        payload = json.loads(final_response.choices[0].message.content)
+        
+        # Override telemetry with actual loop variables
+        payload['telemetry']['chars_scraped'] = chars_scraped
+        payload['telemetry']['urls_crawled'] = urls_crawled
+        return payload
     except Exception as e:
-        print(f"❌ OpenAI Error: {e}")
-        sys.exit(1)
+        print(f"❌ Final JSON Parsing Error: {e}")
+        return {}
+
 
 if __name__ == "__main__":
-    # Test Data mimicking the Frontend Input Payload
     test_profiles = [
-        {"name": "Dad", "restrictions": ["Gluten-Free"]},
-        {"name": "Mom", "restrictions": ["MSG-Free"]}
+        {"name": "MSG Scanner", "restrictions": ["MSG-Free"]}
     ]
-    
-    print("🚀 Starting Additive Detective Engine...\n")
-    final_payload = analyze_allergens("Bottega", "Yountville, CA", test_profiles)
-    
-    print("\n📦 FINAL DELIVERABLE PAYLOAD:\n")
-    print(json.dumps(final_payload, indent=2))
+    print("Starting Headless PDF Agent...")
+    final_payload = analyze_allergens("McDonalds", "Oregon", test_profiles)
+    print("\n📦 FINAL OUTCOME:\n", json.dumps(final_payload, indent=2))

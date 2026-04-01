@@ -6,3 +6,4 @@ duckduckgo-search
 pydantic
 beautifulsoup4
 requests
+pymupdf==1.27.2.2
