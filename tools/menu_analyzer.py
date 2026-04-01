@@ -86,7 +86,7 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     CRITICAL BEHAVIORAL RULES:
     1. STRICTNESS: Bias heavily toward "UNKNOWN (Proceed With Caution)". 90% of restaurant savory sauces, dry rubs, and soups use commercial buckets containing Yeast Extract.
     2. THE SCRATCH-MADE RULE: Unless explicitly confirmed as a high-end scratch kitchen, assume sauces/rubs are pre-packaged.
-    3. THE RESEARCH LOG (PROOF OF WORK): For every single dish, replace standard reasoning with a highly technical 'research_log'. Definitively state which MSG alias Tiers were cross-referenced and what specific scraping observations led to the conclusion. Talk like a cybersecurity analyst.
+    3. THE RESEARCH LOG (PROOF OF WORK): For every single dish, write a technical but readable 'research_log' to prove your work. CRITICAL: NEVER use the word "Tier" or "Tiers" in your output (e.g., do not say "No Tier 1 ingredients detected"). Instead, use terms like "highly-probable hidden MSG aliases" or "known commercial bases". Explicitly state exactly which chemical aliases were cross-referenced (e.g. "Natural Flavors") and what specific scraping observations led to the conclusion. Make it clear and reassuring for the average consumer.
     4. You must respond with valid JSON matching the exact schema.
     
     OUTPUT SCHEMA:
