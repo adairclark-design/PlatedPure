@@ -86,18 +86,7 @@ function App() {
       </div>
       <p className="dish-reasoning">{dish.reasoning}</p>
       
-      {dish.validation_questions && dish.validation_questions.length > 0 && (
-        <div className="server-script-box">
-          <div className="server-script-header">
-            💬 Ask Your Server
-          </div>
-          <ul className="server-script-list">
-            {dish.validation_questions.map((q, qIdx) => (
-              <li key={qIdx}>{q}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+
 
       {dish.confidence && (
         <div className="confidence-tag">

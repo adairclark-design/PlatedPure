@@ -1,0 +1,223 @@
+/Users/adairclark/Desktop/AntiGravity/PlatedPure/tools/menu_analyzer.py:43: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  results = list(DDGS().text(query, max_results=4))
+/Users/adairclark/Desktop/AntiGravity/PlatedPure/tools/menu_analyzer.py:43: RuntimeWarning: This package (`duckduckgo_search`) has been renamed to `ddgs`! Use `pip install ddgs` instead.
+  results = list(DDGS().text(query, max_results=4))
+🚀 Starting PlatedPure Zero-Cost Engine...
+
+🔍 Deep searching: "Bottega" Yountville, CA menu ingredients allergy
+🔍 Deep searching: "Bottega" Yountville, CA (MSG OR "yeast extract" OR allergy) site:yelp.com OR site:tripadvisor.com
+🧠 Analyzing context with OpenAI...
+
+📦 FINAL DELIVERABLE PAYLOAD:
+
+{
+  "restaurant": {
+    "name": "Bottega",
+    "search_context": "Bottega is a high-end Italian restaurant known for its artisanal approach to cooking. However, due to the complexity of Italian cuisine, there is a potential for hidden MSG in sauces and flavorings."
+  },
+  "results": [
+    {
+      "dish_name": "Truffle Risotto",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Risotto often uses broth or stock, which may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the broth used in the risotto made from scratch?",
+        "Does the broth contain any 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "House-made Focaccia",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Bread is typically safe unless flavored with ingredients containing MSG.",
+      "validation_questions": [
+        "Are there any flavor enhancers or 'Natural Flavors' added to the focaccia?"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "dish_name": "Porcini Mushroom Soup",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Soups often use commercial bases containing 'Yeast Extract' or 'Hydrolyzed Protein' (Tier 1).",
+      "validation_questions": [
+        "Is the soup base made from scratch?",
+        "Does the soup contain any 'Yeast Extract' or 'Hydrolyzed Protein'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Grilled Octopus",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Marinades and rubs may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the marinade made in-house?",
+        "Does the marinade contain 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Pasta Primavera",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Simple pasta with vegetables is generally safe if no commercial sauces are used.",
+      "validation_questions": [
+        "Is the sauce made from scratch without any commercial bases?"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "dish_name": "Osso Buco",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Braised dishes may use stock or broth containing 'Natural Flavors' (Tier 2).",
+      "validation_questions": [
+        "Is the braising liquid made from scratch?",
+        "Does it contain any 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Caesar Salad",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Dressing may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the Caesar dressing made in-house?",
+        "Does the dressing contain 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Margherita Pizza",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Simple pizza with fresh ingredients is generally safe if no commercial sauces are used.",
+      "validation_questions": [
+        "Is the tomato sauce made from scratch without any commercial bases?"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "dish_name": "Beef Carpaccio",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Raw beef dish typically safe unless flavored with MSG-containing ingredients.",
+      "validation_questions": [
+        "Are there any flavor enhancers or 'Natural Flavors' added to the carpaccio?"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "dish_name": "Lobster Ravioli",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Ravioli fillings and sauces may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the ravioli filling made in-house?",
+        "Does the sauce contain 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Roasted Chicken",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Dry rubs or marinades may contain 'Yeast Extract' or 'Hydrolyzed Protein' (Tier 1).",
+      "validation_questions": [
+        "Is the dry rub made in-house?",
+        "Does the marinade contain 'Yeast Extract' or 'Hydrolyzed Protein'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Eggplant Parmesan",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Tomato sauce may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the tomato sauce made from scratch?",
+        "Does the sauce contain 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Seafood Risotto",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Risotto often uses broth or stock, which may contain 'Natural Flavors' or 'Yeast Extract' (Tier 2).",
+      "validation_questions": [
+        "Is the broth used in the risotto made from scratch?",
+        "Does the broth contain any 'Natural Flavors' or 'Yeast Extract'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Caprese Salad",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Simple salad with fresh ingredients is generally safe.",
+      "validation_questions": [
+        "Are there any flavor enhancers or 'Natural Flavors' added to the salad?"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "dish_name": "Veal Milanese",
+      "status": "UNKNOWN",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Breadcrumbs or coatings may contain 'Yeast Extract' or 'Hydrolyzed Protein' (Tier 1).",
+      "validation_questions": [
+        "Are the breadcrumbs made in-house?",
+        "Does the coating contain 'Yeast Extract' or 'Hydrolyzed Protein'?"
+      ],
+      "confidence": "LOW"
+    },
+    {
+      "dish_name": "Tiramisu",
+      "status": "SAFE",
+      "flagged_by": [
+        "MSG Scanner"
+      ],
+      "reasoning": "Desserts are generally safe unless flavored with MSG-containing ingredients.",
+      "validation_questions": [
+        "Are there any flavor enhancers or 'Natural Flavors' added to the tiramisu?"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "disclaimer": "This analysis is AI-generated using Deep Web Scraping and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly. ALWAYS physically verify with your server using the provided questions."
+}

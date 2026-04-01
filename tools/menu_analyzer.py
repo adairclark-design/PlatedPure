@@ -78,8 +78,7 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     CRITICAL BEHAVIORAL RULES:
     1. STRICTNESS: Bias heavily toward "UNKNOWN (Proceed With Caution)". 90% of restaurant savory sauces, dry rubs, and soups use commercial buckets containing Yeast Extract.
     2. THE SCRATCH-MADE RULE: Unless explicitly confirmed as a high-end scratch kitchen, assume sauces/rubs are pre-packaged.
-    3. VALIDATION SCRIPTS: For every UNKNOWN or SAFE dish, provide 1-3 highly specific validation_questions interrogating about Tier 1/2 aliases. (e.g., "Does the dry rub contain Yeast Extract or Hydrolyzed Protein?", "Is the sauce made strictly from scratch, or does the commercial base contain Natural Flavors?")
-    4. You must respond with valid JSON matching the exact schema.
+    3. You must respond with valid JSON matching the exact schema.
     
     OUTPUT SCHEMA:
     {
@@ -93,11 +92,10 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
           "status": "SAFE" | "UNSAFE" | "UNKNOWN",
           "flagged_by": ["MSG Scanner"],
           "reasoning": "<why it's unsafe/unknown, explicitly citing the specific Tier 1/Tier 2 chemical from the Database you suspect>",
-          "validation_questions": ["<Question 1 for the server>", "<Question 2 for the server>"],
           "confidence": "HIGH" | "LOW"
         }
       ],
-      "disclaimer": "This analysis is AI-generated using Deep Web Scraping and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly. ALWAYS physically verify with your server using the provided questions."
+      "disclaimer": "This analysis is AI-generated using Deep Web Scraping and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly."
     }
     """
     
