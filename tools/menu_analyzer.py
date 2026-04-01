@@ -67,7 +67,7 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
     try:
         openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         response = openrouter_client.chat.completions.create(
-            model="perplexity/llama-3.1-sonar-huge-128k-online",
+            model="perplexity/sonar",
             messages=[
                 {"role": "system", "content": "You are an investigative drone. Your sole directive is to browse the internet, locate the OFFICIAL allergen/ingredient list (often a PDF or hidden sub-page) for the requested restaurant, and extract the EXACT text of the ingredients. Do NOT format as JSON. Just dump the raw unedited ingredient text of the menu."},
                 {"role": "user", "content": f"Find the official exact ingredient list for the restaurant: {restaurant_name} (near {location}). Search their official website or menustat.org."}
