@@ -100,6 +100,43 @@ function App() {
     }
   }
 
+  // Pre-filter results if they exist
+  const safeDishes = results?.results?.filter(d => d.status.startsWith('SAFE')) || []
+  const unknownDishes = results?.results?.filter(d => d.status.includes('UNKNOWN')) || []
+  const unsafeDishes = results?.results?.filter(d => d.status.includes('UNSAFE')) || []
+
+  // Helper component to dry up the Safe/Unknown rendering logic
+  const renderDishCard = (dish, idx) => (
+    <div key={idx} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
+      <div className="dish-header">
+        <h3 className="dish-name">{dish.dish_name}</h3>
+        <span className={`dish-status ${getBadgeClass(dish.status)}`}>
+          {dish.status}
+        </span>
+      </div>
+      <p className="dish-reasoning">{dish.reasoning}</p>
+      
+      {dish.validation_questions && dish.validation_questions.length > 0 && (
+        <div className="server-script-box">
+          <div className="server-script-header">
+            💬 Ask Your Server
+          </div>
+          <ul className="server-script-list">
+            {dish.validation_questions.map((q, qIdx) => (
+              <li key={qIdx}>{q}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {dish.confidence && (
+        <div className="confidence-tag">
+          {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="container">
       {/* ── Liability Modal ── */}
@@ -212,36 +249,44 @@ function App() {
             </div>
 
             <div className="dishes-feed">
-              {results.results?.map((dish, idx) => (
-                <div key={idx} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
-                  <div className="dish-header">
-                    <h3 className="dish-name">{dish.dish_name}</h3>
-                    <span className={`dish-status ${getBadgeClass(dish.status)}`}>
-                      {dish.status}
-                    </span>
-                  </div>
-                  <p className="dish-reasoning">{dish.reasoning}</p>
-                  
-                  {dish.validation_questions && dish.validation_questions.length > 0 && (
-                    <div className="server-script-box">
-                      <div className="server-script-header">
-                        💬 Ask Your Server
-                      </div>
-                      <ul className="server-script-list">
-                        {dish.validation_questions.map((q, qIdx) => (
-                          <li key={qIdx}>{q}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {dish.confidence && (
-                    <div className="confidence-tag">
-                      {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
-                    </div>
-                  )}
+              {/* ✅ Safe Options */}
+              {safeDishes.length > 0 && (
+                <div className="dish-tier">
+                  <h3 className="tier-header" style={{ color: 'var(--brand-emerald)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-emerald)', paddingBottom: '0.5rem' }}>✅ Top Safe Recommendations</h3>
+                  {safeDishes.map((dish, idx) => renderDishCard(dish, `safe-${idx}`))}
                 </div>
-              ))}
+              )}
+
+              {/* Empty Safe State */}
+              {safeDishes.length === 0 && (
+                <div className="glass-card dish-card dish-unsafe" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <h3 style={{ color: 'var(--unsafe)', marginBottom: '0.5rem' }}>No Guaranteed Safe Items Found</h3>
+                  <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>The AI could not confidently identify any strictly safe dishes. Please review the items below cautiously.</p>
+                </div>
+              )}
+
+              {/* 💬 Unknown / Conditionals */}
+              {unknownDishes.length > 0 && (
+                <div className="dish-tier" style={{ marginTop: '2rem' }}>
+                  <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>💬 Proceed With Caution</h3>
+                  {unknownDishes.map((dish, idx) => renderDishCard(dish, `unk-${idx}`))}
+                </div>
+              )}
+
+              {/* ⛔ Unsafe Items (Condensed) */}
+              {unsafeDishes.length > 0 && (
+                <div className="dish-tier" style={{ marginTop: '2.5rem' }}>
+                  <h3 className="tier-header" style={{ color: 'var(--unsafe)', marginBottom: '1rem', borderBottom: '2px solid var(--unsafe)', paddingBottom: '0.5rem' }}>⛔ Unsafe Items</h3>
+                  <div className="unsafe-condensed-list glass-card">
+                    {unsafeDishes.map((dish, idx) => (
+                      <div className="unsafe-list-item" key={`unsf-${idx}`}>
+                        <div className="unsafe-name"><strong>{dish.dish_name}</strong></div>
+                        <div className="unsafe-reason">{dish.reasoning}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="disclaimer">

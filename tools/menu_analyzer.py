@@ -42,6 +42,11 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     If a profile is MSG-Free, you MUST explicitly flag dishes likely to contain: Yeast Extract, Hydrolyzed Vegetable Protein, Autolyzed Yeast, Calcium Caseinate, Natural Flavorings, Torula Yeast, or third-party sauces (Soy Sauce, Bouillon, commercial Mayo, pre-made marinades). 
     If a profile is Gluten-Free, strongly flag cross-contamination in fryers and hidden flour in thickeners (roux, sauces).
     
+    HYBRID RECONSTRUCTION COMMAND:
+    You MUST output a minimum of 10-12 realistic menu items for this restaurant.
+    1. First, analyze all dishes explicitly mentioned in the Web Context Snippets.
+    2. If the snippets do not contain 10-12 items, you MUST use your vast pre-trained knowledge of this physical restaurant (or identical restaurants of this specific cuisine/location) to fill the gaps and provide a robust, comprehensive 10-12 item menu breakdown. 
+    
     CRITICAL BEHAVIORAL RULES:
     1. You are an investigative assistant, NOT a medical guarantor.
     2. If an ingredient's safety is ambiguous or relies on a third-party sauce (where the chef might not know the ingredients), flag as 'UNKNOWN'.

@@ -497,3 +497,45 @@
   box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
+/* ── Unsafe Items (Condensed View) ── */
+.unsafe-condensed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.unsafe-list-item {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  transition: background 0.2s ease;
+}
+
+.unsafe-list-item:last-child {
+  border-bottom: none;
+}
+
+.unsafe-list-item:hover {
+  background: rgba(220, 38, 38, 0.02);
+}
+
+.unsafe-name {
+  color: var(--unsafe);
+  font-size: 1.05rem;
+  margin-bottom: 0.3rem;
+}
+
+.unsafe-reason {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.tier-header {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
