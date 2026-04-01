@@ -124,19 +124,19 @@ function App() {
 
       <header className="header">
         <h1>PlatedPure</h1>
-        <div className="header-badge">Enterprise MSG Detection Engine</div>
+        <div className="header-badge">Universal MSG Detection Engine</div>
       </header>
 
       <main>
         <div className="glass-card search-form">
           <form onSubmit={handleSearch}>
-            {/* Restaurant Fields */}
+            {/* Universal Search Field */}
             <div className="input-group">
-              <div className="section-label">Restaurant Name</div>
+              <div className="section-label">Search Restaurant or Grocery Brand</div>
               <input
                 type="text"
                 className="search-input"
-                placeholder="e.g. Olive Garden"
+                placeholder="e.g. Olive Garden or Doritos Cool Ranch"
                 value={restaurantName}
                 onChange={e => setRestaurantName(e.target.value)}
                 required

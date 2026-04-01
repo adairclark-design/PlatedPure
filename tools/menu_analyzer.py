@@ -25,13 +25,13 @@ def fetch_url_text(url: str, max_chars: int = 5000) -> str:
     except Exception:
         return ""
 
-def fetch_restaurant_context(restaurant_name: str, location: str) -> dict:
+def fetch_restaurant_context(search_query: str, location: str) -> dict:
     """
-    Deep Scrape Engine: Runs multi-vector DDGS queries and physically crawls URLs.
+    Deep Scrape Engine: Runs multi-vector DDGS queries for both restaurants and grocery products.
     """
     queries = [
-        f'"{restaurant_name}" {location} menu ingredients allergy',
-        f'"{restaurant_name}" {location} (MSG OR "yeast extract" OR allergy) site:yelp.com OR site:tripadvisor.com'
+        f'"{search_query}" ingredients label MSG allergy',
+        f'"{search_query}" {location} (MSG OR "yeast extract" OR allergy) reviews'
     ]
     
     context_snippets = []
@@ -81,7 +81,8 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     - [TIER 3] ENHANCERS (Indicators MSG is present): Disodium 5'-guanylate (E627), Disodium 5'-inosinate (E631), Disodium 5'-ribonucleotides (E635).
     
     HYBRID RECONSTRUCTION COMMAND:
-    You MUST output an exhaustive minimum of 15-20 realistic menu items. Do NOT just list dangerous dishes. Deliberately seek out and generate "borderline" or simple dishes (like steamed veggies, plain meats, simple salads) so the user possesses a massive playbook of "Proceed With Caution" (Maybe Safe) options to negotiate with the server using.
+    Condition 1 (Restaurant Context): If the user searched for a Restaurant, you MUST output an exhaustive minimum of 15-20 realistic menu items. Do NOT just list dangerous dishes. Deliberately seek out "borderline" or simple dishes (like steamed veggies) so the user possesses a massive playbook of "Proceed With Caution" options to negotiate with the server.
+    Condition 2 (Grocery Product Context): If the user searched for a specific consumer grocery product or brand (like Doritos, Ketchup, a soup can, etc.), analyze that specific product heavily. DO NOT invent a 15-item menu. Instead, output 4-5 results total: the main product they searched, followed immediately by 3-4 Alternative Brand options or Flavor Variants (e.g. if they searched Cool Ranch, output Nacho Cheese, or a safe alternative brand) so they have safe options while grocery shopping.
     
     CRITICAL BEHAVIORAL RULES:
     1. STRICTNESS: Bias heavily toward "UNKNOWN (Proceed With Caution)". 90% of restaurant savory sauces, dry rubs, and soups use commercial buckets containing Yeast Extract.
@@ -114,8 +115,8 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     """
     
     user_prompt = f"""
-    Restaurant: {restaurant_name} ({location})
-    Task: Exhaustive hidden MSG sweep (15-20 items minimum).
+    Search Target: {restaurant_name} (Region Context: {location})
+    Task: Identify if this is a Restaurant or Grocery Product and execute the appropriate HYBRID RECONSTRUCTION COMMAND logic.
     
     Telemetry Data:
     URLs Crawled: {context_data['urls']}
@@ -124,7 +125,7 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     Deep Web Context (Reviews & Menus):
     {context_data['text']}
     
-    Act as the MSG Detection Engine. Output the exact telemetry data provided above, reconstruct 15-20 items using technical research logs, and output pure JSON.
+    Act as the MSG Detection Engine. Output the exact telemetry data provided above, reconstruct the requested items using technical research logs, and output pure JSON.
     """
 
     print("🧠 Analyzing context with OpenAI...")
