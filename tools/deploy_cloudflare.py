@@ -39,16 +39,16 @@ r = requests.post(
 )
 resp = r.json()
 
-# If success directly (all hashes already cached by CF) we're done
+# If CF returns no required_file_hashes, it means everything is natively cached and we're done.
 if resp.get("success") and resp.get("result", {}).get("id"):
-    dep = resp["result"]
-    print(f"✅ Deployed via cache! URL: {dep.get('url','https://platedpure-app.pages.dev')}")
-    exit(0)
-
-# Otherwise, CF returns required_file_hashes + jwt upload token
-result         = resp.get("result") or {}
-needed         = result.get("required_file_hashes", list(files_data.keys()))
-upload_jwt     = result.get("jwt", TOKEN)
+    result = resp.get("result", {})
+    needed = result.get("required_file_hashes", [])
+    if len(needed) == 0:
+        print(f"✅ All chunks natively cached on Edge. Proceeding to finalize...")
+    upload_jwt = result.get("jwt", TOKEN)
+else:
+    print(f"❌ Failed to request deployment: {resp}")
+    exit(1)
 
 print(f"📤 Need to upload {len(needed)} files...")
 

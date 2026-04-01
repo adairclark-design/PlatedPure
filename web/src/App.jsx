@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './App.css'
 
 function App() {
@@ -6,22 +6,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
-  const [hasAcceptedTOS, setHasAcceptedTOS] = useState(true) // Default true to avoid flash, updated in effect
-
-  useEffect(() => {
-    const accepted = localStorage.getItem('additivedetective_tos_accepted')
-    if (!accepted) {
-      setHasAcceptedTOS(false)
-    }
-  }, [])
-
-  const handleAcceptTOS = () => {
-    localStorage.setItem('additivedetective_tos_accepted', 'true')
-    setHasAcceptedTOS(true)
-  }
-
+  
   const handleSearch = async (e) => {
-    e.preventDefault()
     if (!restaurantName) return
 
     setLoading(true)
@@ -97,32 +83,7 @@ function App() {
   )
 
   return (
-    <div className="container">
-      {/* ── Liability Modal ── */}
-      {!hasAcceptedTOS && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-icon">⚠️</div>
-            <h2 className="modal-title">MSG Danger Protocol</h2>
-            <div className="modal-text">
-              <p style={{ marginBottom: '1rem' }}>
-                PlatedPure is an <strong>Enterprise MSG-Sweeper</strong>, NOT a medical guarantor.
-              </p>
-              <p style={{ marginBottom: '1rem' }}>
-                Because restaurants legally hide high-glutamate ingredients under deceptive names like <strong>"Yeast Extract"</strong> and <strong>"Natural Flavors"</strong>, AI analysis alone is never 100% safe.
-              </p>
-              <p>
-                You must <strong>ALWAYS</strong> use the provided "Server Scripts" to verify sauce and rub sourcing with the restaurant staff before eating.
-              </p>
-            </div>
-            <button className="accept-btn" onClick={handleAcceptTOS}>
-              I Understand & Agree
-            </button>
-          </div>
-        </div>
-      )}
-
-      <header className="header">
+    <div className="container">      <header className="header">
         <h1>Additive Detective</h1>
         <div className="header-badge">Universal Scanning Engine</div>
       </header>
