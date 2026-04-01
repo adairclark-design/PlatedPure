@@ -44,7 +44,7 @@ function App() {
     switch (status?.toLowerCase()) {
       case 'safe':   return 'dish-safe'
       case 'unsafe': return 'dish-unsafe'
-      default:       return 'dish-unknown'
+      default:       return 'dish-uncertain'
     }
   }
 
@@ -52,12 +52,12 @@ function App() {
     switch (status?.toLowerCase()) {
       case 'safe':   return 'status-badge-safe'
       case 'unsafe': return 'status-badge-unsafe'
-      default:       return 'status-badge-unknown'
+      default:       return 'status-badge-uncertain'
     }
   }
 
   const safeDishes    = results?.results?.filter(d => d.status.startsWith('SAFE'))    || []
-  const unknownDishes = results?.results?.filter(d => d.status.includes('UNKNOWN'))   || []
+  const uncertainDishes = results?.results?.filter(d => d.status.includes('UNCERTAIN'))   || []
   const unsafeDishes  = results?.results?.filter(d => d.status.includes('UNSAFE'))    || []
 
   const renderDishCard = (dish, key) => {
@@ -232,12 +232,12 @@ function App() {
               )}
 
               {/* 💬 Proceed With Caution */}
-              {unknownDishes.length > 0 && (
+              {uncertainDishes.length > 0 && (
                 <div className="dish-tier" style={{ marginTop: '2rem' }}>
                   <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>
                     💬 Proceed With Caution
                   </h3>
-                  {unknownDishes.map((dish, idx) => renderDishCard(dish, `unk-${idx}`))}
+                  {uncertainDishes.map((dish, idx) => renderDishCard(dish, `unc-${idx}`))}
                 </div>
               )}
 

@@ -15,9 +15,9 @@
   --unsafe:          #e11d48;
   --unsafe-light:    rgba(225,29,72,0.10);
   --unsafe-glow:     0 0 20px rgba(225,29,72,0.25);
-  --unknown:         #f59e0b;
-  --unknown-light:   rgba(245,158,11,0.10);
-  --unknown-glow:    0 0 20px rgba(245,158,11,0.25);
+  --uncertain:         #f59e0b;
+  --uncertain-light:   rgba(245,158,11,0.10);
+  --uncertain-glow:    0 0 20px rgba(245,158,11,0.25);
 
   /* Text */
   --text-main:   #0f172a;

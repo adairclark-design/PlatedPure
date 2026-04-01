@@ -120,10 +120,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
     8. EVIDENCE-BASED CLASSIFICATION - CRITICAL RULE:
        - SAFE: Assign ONLY when the ingredients array is 100% clean (no MSG definitions). Simple, unprocessed items MUST be SAFE with HIGH confidence.
-       - UNKNOWN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
+       - UNCERTAIN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
        - UNSAFE: Assign ONLY when the dish contains 'DIRECT MSG / GUARANTEED CARRIERS' (e.g., Monosodium Glutamate, Yeast Extract) OR 'CHEMICAL ENHANCERS'. These are guaranteed toxic.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If they do serve them (like Steamed Rice at a Chinese restaurant or Plain Black Beans at a Mexican restaurant), you MUST include them to provide a complete safety profile. If there are zero safe items on their real menu, do not invent one.
-    10. SERVER INTERROGATION SCRIPT: The app is used by people with severe medical allergies. For every SAFE and UNKNOWN dish, provide a 'server_question' string. This must be a specific, direct question the user can read to the waiter to verify safety. Be highly specific to the dish (e.g. 'Does your grill cook the burger in the same butter as the teriyaki chicken?'). For UNSAFE items, output the exact string "None".
+    10. SERVER INTERROGATION SCRIPT: The app is used by people with severe medical allergies. For every SAFE and UNCERTAIN dish, provide a 'server_question' string. This must be a specific, direct question the user can read to the waiter to verify safety. Be highly specific to the dish (e.g. 'Does your grill cook the burger in the same butter as the teriyaki chicken?'). For UNSAFE items, output the exact string "None".
     """
 
 
@@ -160,7 +160,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
                             "type": "object",
                             "properties": {
                                 "dish_name": {"type": "string"},
-                                "status": {"type": "string", "enum": ["SAFE", "UNSAFE", "UNKNOWN"]},
+                                "status": {"type": "string", "enum": ["SAFE", "UNSAFE", "UNCERTAIN"]},
                                 "flagged_by": {
                                     "type": "array",
                                     "items": {"type": "string"}
@@ -207,7 +207,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
 
 
 def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> dict:
-    source_tag = "UNKNOWN"
+    source_tag = "UNCERTAIN"
     context = ""
     
     # Layer 1
