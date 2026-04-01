@@ -152,7 +152,7 @@ if __name__ == "__main__":
         {"name": "Mom", "restrictions": ["MSG-Free"]}
     ]
     
-    print("🚀 Starting PlatedPure Zero-Cost Engine...\n")
+    print("🚀 Starting Additive Detective Engine...\n")
     final_payload = analyze_allergens("Bottega", "Yountville, CA", test_profiles)
     
     print("\n📦 FINAL DELIVERABLE PAYLOAD:\n")

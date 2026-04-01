@@ -9,14 +9,14 @@ function App() {
   const [hasAcceptedTOS, setHasAcceptedTOS] = useState(true) // Default true to avoid flash, updated in effect
 
   useEffect(() => {
-    const accepted = localStorage.getItem('platedpure_tos_accepted')
+    const accepted = localStorage.getItem('additivedetective_tos_accepted')
     if (!accepted) {
       setHasAcceptedTOS(false)
     }
   }, [])
 
   const handleAcceptTOS = () => {
-    localStorage.setItem('platedpure_tos_accepted', 'true')
+    localStorage.setItem('additivedetective_tos_accepted', 'true')
     setHasAcceptedTOS(true)
   }
 
@@ -123,8 +123,8 @@ function App() {
       )}
 
       <header className="header">
-        <h1>PlatedPure</h1>
-        <div className="header-badge">Universal MSG Detection Engine</div>
+        <h1>Additive Detective</h1>
+        <div className="header-badge">Universal Scanning Engine</div>
       </header>
 
       <main>

@@ -10,7 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tools.menu_analyzer import analyze_allergens
 
-app = FastAPI(title="PlatedPure AI API", version="1.0.0")
+app = FastAPI(title="Additive Detective Server", version="1.0.0")
 
 # Enable CORS so the React/Vite local dev server can communicate with FastAPI
 app.add_middleware(
