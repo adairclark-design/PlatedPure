@@ -3,7 +3,6 @@ import './App.css'
 
 function App() {
   const [restaurantName, setRestaurantName] = useState('')
-  const [location, setLocation] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
@@ -23,7 +22,7 @@ function App() {
 
   const handleSearch = async (e) => {
     e.preventDefault()
-    if (!restaurantName || !location) return
+    if (!restaurantName) return
 
     setLoading(true)
     setError(null)
@@ -31,7 +30,7 @@ function App() {
 
     const payload = {
       restaurant_name: restaurantName,
-      location: location,
+      location: 'Oregon',
       profiles: [
         { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
       ]
@@ -140,18 +139,6 @@ function App() {
                 placeholder="e.g. Olive Garden"
                 value={restaurantName}
                 onChange={e => setRestaurantName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="input-group">
-              <div className="section-label">City / Location</div>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="e.g. Pasadena, CA"
-                value={location}
-                onChange={e => setLocation(e.target.value)}
                 required
               />
             </div>
