@@ -106,22 +106,22 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     BACKGROUND CONTEXT: {context}
 
     THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
-    - [TIER 1] GUARANTEED MSG: Monosodium Glutamate (E621), Yeast Extract, Autolyzed Yeast, Hydrolyzed Veg/Soy Protein, Calcium Caseinate, Torula Yeast.
-    - [TIER 2] HIGH PROBABILITY: Natural Flavors, Artificial Flavors, Bouillon, Broth, Maltodextrin, Pectin, Soy Sauce.
-    - [TIER 3] ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
+    - DIRECT MSG / GUARANTEED CARRIERS: Monosodium Glutamate (E621), Yeast Extract, Autolyzed Yeast, Hydrolyzed Veg/Soy Protein, Calcium Caseinate, Torula Yeast.
+    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural Flavors, Artificial Flavors, Bouillon, Broth, Maltodextrin, Pectin, Soy Sauce.
+    - CHEMICAL ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
     
     CRITICAL BEHAVIORAL RULES:
     1. STRICT INGREDIENT REPORTING: You must provide a simple, flat array of atomic ingredient names for each dish. Each ingredient must be a SHORT, PLAIN ingredient name (e.g. 'Soy Sauce', 'Cornstarch', 'Natural Flavors'). NEVER write nested parenthetical sub-formulas like 'Soy Sauce (Water, Soybeans, Salt, MSG)'. Each array item must be a single, atomic ingredient string. NO nesting.
     2. THE "COMMERCIAL BASELINE" SYNTHESIS: If the BACKGROUND CONTEXT indicates "NO OFFICIAL DATA ACQUIRED", act as an INDUSTRIAL FOOD SCIENTIST. Populate the 'ingredients' array with the exact, standard commercial supply-chain formulation typically used for that specific dish at that specific restaurant. Use ATOMIC ingredient names only.
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
-    5. CULINARY INFERENCE: Explain which SPECIFIC additives from the 'ingredients' array match the MSG Danger Tiers. Name the exact ingredient (e.g. 'Natural Flavors is TIER 2').
+    5. USER-FRIENDLY INFERENCE (NO 'TIER' JARGON): Explain the risk of the 'ingredients' array in plain, simple English. DO NOT use the word 'Tier' or 'Tier 1/2/3'. Instead, say exactly why it's harmful, e.g. "Natural Flavors is a high-risk hidden additive," or "Yeast Extract is a guaranteed MSG carrier." If it is safe, say "Contains no MSG-related ingredients."
     6. STRICT FIDELITY + DENSITY: If SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', ONLY output the exact dishes from BACKGROUND CONTEXT. If SOURCE is 'COMMERCIAL_SYNTHESIS', generate the 12-16 most famous, real menu items for that exact restaurant.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
     8. EVIDENCE-BASED CLASSIFICATION - CRITICAL RULE:
-       - SAFE: Assign ONLY when the ingredients array contains NO Tier 1, Tier 2, or Tier 3 ingredients. Simple, unprocessed items MUST be SAFE with HIGH confidence.
+       - SAFE: Assign ONLY when the ingredients array contains NO MSG definitions. Simple, unprocessed items MUST be SAFE with HIGH confidence.
        - UNKNOWN: Assign when there is indirect risk - a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
-       - UNSAFE: Assign ONLY when you have placed a confirmed Tier 1, 2, or 3 ingredient directly in the 'ingredients' array at the top level.
+       - UNSAFE: Assign ONLY when you have placed a confirmed direct MSG carrier or high-risk additive directly in the 'ingredients' array at the top level.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If there are zero safe items on their real menu, do not invent one.
     """
 
