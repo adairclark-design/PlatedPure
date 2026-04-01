@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Core Brand Palette */
+  --brand-emerald:   #10b981;
+  --brand-teal:      #0d9488;
+  --brand-deep:      #064e3b;
+  --brand-amber:     #f59e0b;
+  --brand-rose:      #e11d48;
+
+  /* Status semantic tokens */
+  --safe:            #10b981;
+  --safe-light:      rgba(16,185,129,0.12);
+  --safe-glow:       0 0 20px rgba(16,185,129,0.3);
+  --unsafe:          #e11d48;
+  --unsafe-light:    rgba(225,29,72,0.10);
+  --unsafe-glow:     0 0 20px rgba(225,29,72,0.25);
+  --unknown:         #f59e0b;
+  --unknown-light:   rgba(245,158,11,0.10);
+  --unknown-glow:    0 0 20px rgba(245,158,11,0.25);
+
+  /* Text */
+  --text-main:   #0f172a;
+  --text-muted:  #64748b;
+  --text-light:  #94a3b8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top left,   rgba(16,185,129,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at top right,  rgba(13,148,136,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom,     rgba(6,78,59,0.08) 0%, transparent 60%),
+    linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 30%, #f8fafc 65%, #fffbeb 100%);
+  color: var(--text-main);
+  padding-bottom: 4rem;
+}
+
+#root {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ── Animations ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+@keyframes tagPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(0.93); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}

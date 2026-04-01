@@ -1,0 +1,41 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.13.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/adairclark/Desktop/AntiGravity/PlatedPure/.npmrc
+5 silly config load:file:/Users/adairclark/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm exec create-vite@latest web --template react
+8 verbose argv "exec" "--cache" "/Users/adairclark/Desktop/AntiGravity/PlatedPure/.npm-cache" "--yes" "--" "create-vite@latest" "web" "--template" "react"
+9 verbose logfile logs-max:10 dir:/Users/adairclark/Desktop/AntiGravity/PlatedPure/.npm-cache/_logs/2026-04-01T01_07_35_299Z-
+10 verbose logfile /Users/adairclark/Desktop/AntiGravity/PlatedPure/.npm-cache/_logs/2026-04-01T01_07_35_299Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 http fetch GET 200 https://registry.npmjs.org/create-vite 136ms (cache miss)
+14 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+15 http fetch GET 200 https://registry.npmjs.org/npm 158ms
+16 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+17 silly idealTree buildDeps
+18 silly fetch manifest create-vite@9.0.3
+19 silly packumentCache full:https://registry.npmjs.org/create-vite cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/create-vite 42ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/create-vite set size:undefined disposed:false
+22 silly placeDep ROOT create-vite@9.0.3 OK for:  want: 9.0.3
+23 silly reify moves {}
+24 silly audit bulk request { 'create-vite': [ '9.0.3' ] }
+25 http cache create-vite@https://registry.npmjs.org/create-vite/-/create-vite-9.0.3.tgz 0ms (cache hit)
+26 silly tarball no local data for create-vite@https://registry.npmjs.org/create-vite/-/create-vite-9.0.3.tgz. Extracting by manifest.
+27 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 47ms
+28 silly audit report {}
+29 http fetch GET 200 https://registry.npmjs.org/create-vite/-/create-vite-9.0.3.tgz 133ms (cache miss)
+30 verbose cwd /Users/adairclark/Desktop/AntiGravity/PlatedPure
+31 verbose os Darwin 25.1.0
+32 verbose node v24.13.0
+33 verbose npm  v11.6.2
+34 notice
+34 notice New [33mminor[39m version of npm available! [33m11.6.2[39m -> [34m11.12.1[39m
+34 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.12.1[39m
+34 notice To update run: [4mnpm install -g npm@11.12.1[24m
+34 notice  { force: true, Symbol(proc-log.meta): true }
+35 verbose exit 0
+36 info ok
