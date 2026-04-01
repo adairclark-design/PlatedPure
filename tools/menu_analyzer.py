@@ -69,14 +69,18 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
-                {"role": "system", "content": "You are an investigative drone. Your sole directive is to browse the internet, locate the OFFICIAL allergen/ingredient list (often a PDF or hidden sub-page) for the requested restaurant, and extract the EXACT text of the ingredients. Do NOT format as JSON. Just dump the raw unedited ingredient text of the menu."},
-                {"role": "user", "content": f"Find the official exact ingredient list for the restaurant: {restaurant_name} (near {location}). Search their official website or menustat.org."}
+                {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
+                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 10 dishes."}
             ],
             timeout=30
         )
         data = response.choices[0].message.content
-        if "not find" in data.lower() or "do not have" in data.lower():
+        if "not find" in data.lower() or "do not have" in data.lower() or "cannot access" in data.lower() or "INSUFFICIENT_DATA" in data:
             print("🟡 LAYER 2 FAILED: Drone could not locate proprietary data on the open web.")
+            return ""
+        # Quality gate: response must be substantial structured data (not meta-commentary)
+        if len(data) < 1500 or data.count(':') < 5:
+            print(f"🟡 LAYER 2 INSUFFICIENT: Response is meta-commentary, not structured ingredient data ({len(data)} chars, {data.count(':')} colons). Falling to Layer 3 Synthesis.")
             return ""
         return f"PERPLEXITY LIVE-WEB SCRAPE DATA:\n{data}"
     except Exception as e:
@@ -107,14 +111,21 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     - [TIER 3] ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
     
     CRITICAL BEHAVIORAL RULES:
-    1. STRICT INGREDIENT REPORTING: You must provide a literal mathematical array of ALL common ingredients comprising the dish under the 'ingredients' array.
-    2. THE "COMMERCIAL BASELINE" SYNTHESIS: If the BACKGROUND CONTEXT indicates "NO OFFICIAL DATA ACQUIRED", you must act as an INDUSTRIAL FOOD SCIENTIST. Populate the 'ingredients' array with the exact, standard commercial supply-chain formulation typically used for that dish (e.g. for a Turkey Sub, list Water, Salt, Dextrose, Carrageenan, Natural Flavors, etc.).
+    1. STRICT INGREDIENT REPORTING: You must provide a simple, flat array of atomic ingredient names for each dish. Each ingredient must be a SHORT, PLAIN ingredient name (e.g. 'Soy Sauce', 'Cornstarch', 'Natural Flavors'). NEVER write nested parenthetical sub-formulas like 'Soy Sauce (Water, Soybeans, Salt, MSG)'. Each array item must be a single, atomic ingredient string. NO nesting.
+    2. THE "COMMERCIAL BASELINE" SYNTHESIS: If the BACKGROUND CONTEXT indicates "NO OFFICIAL DATA ACQUIRED", act as an INDUSTRIAL FOOD SCIENTIST. Populate the 'ingredients' array with the exact, standard commercial supply-chain formulation typically used for that specific dish at that specific restaurant. Use ATOMIC ingredient names only.
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
-    4. NO VAGUE HEDGING: You are strictly forbidden from writing paragraphs like "Typically includes...". The UI renders the 'ingredients' array as chemical chips.
-    5. CULINARY INFERENCE: Explain which specific additives from the 'ingredients' array match the MSG Danger Tiers. 
-    6. STRICT MENU FIDELITY: If the DATA ACQUISITION SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', you must ONLY output the exact dishes provided in the BACKGROUND CONTEXT. Do not invent, pad, or add a single extra item. If the SOURCE is 'COMMERCIAL_SYNTHESIS', generate 8 to 12 of the most famous, literal menu items that belong exclusively to that specific restaurant. Do not hallucinate generic "safe" items like 'Plain beef patty' unless the restaurant is explicitly a burger joint.
-    7. STRICT FILTERING (NO DRINKS/SAUCES): You MUST aggressively drop and ignore all soft drinks, sodas, generic beverages (e.g., Pepsi, Coke, Dr. Pepper), and isolated generic dipping sauces (e.g., Plum Sauce, Ketchup, Mustard). ONLY output and analyze true food items: entrees, appetizers, desserts, and sides.
+    4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
+    5. CULINARY INFERENCE: Explain which SPECIFIC additives from the 'ingredients' array match the MSG Danger Tiers. Name the exact ingredient (e.g. 'Natural Flavors is TIER 2').
+    6. STRICT FIDELITY + DENSITY: If SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', ONLY output the exact dishes from BACKGROUND CONTEXT. If SOURCE is 'COMMERCIAL_SYNTHESIS', generate the 12-16 most famous, real menu items for that exact restaurant.
+    7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
+    8. EVIDENCE-BASED CLASSIFICATION — CRITICAL RULE:
+       - SAFE: Assign ONLY when the ingredients array contains NO Tier 1, Tier 2, or Tier 3 ingredients. Plain items like Steamed White Rice (ingredients: ['Water', 'Long-Grain White Rice']) MUST be SAFE with HIGH confidence. Super Greens / Mixed Vegetables (ingredients: ['Broccoli', 'Kale', 'Cabbage', 'Snap Peas']) MUST be SAFE with HIGH confidence.
+       - UNKNOWN: Assign when there is indirect risk — a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
+       - UNSAFE: Assign ONLY when you have placed a confirmed Tier 1, 2, or 3 ingredient directly in the 'ingredients' array at the top level. The flagged ingredient must appear verbatim in the array.
+       - DO NOT assign UNSAFE unless a flagged ingredient appears as a top-level atomic item in the ingredients array.
+    9. CHINESE RESTAURANT RULE: For any Chinese restaurant (including Panda Express), you MUST include Steamed White Rice and Super Greens (Vegetable Mix) as two distinct dishes. These will always be SAFE with HIGH confidence.
     """
+
 
     final_output_schema = {
         "type": "json_schema",
