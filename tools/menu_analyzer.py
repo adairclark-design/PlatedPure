@@ -123,7 +123,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - UNKNOWN: Assign when there is indirect risk — a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
        - UNSAFE: Assign ONLY when you have placed a confirmed Tier 1, 2, or 3 ingredient directly in the 'ingredients' array at the top level. The flagged ingredient must appear verbatim in the array.
        - DO NOT assign UNSAFE unless a flagged ingredient appears as a top-level atomic item in the ingredients array.
-    9. CHINESE RESTAURANT RULE: For any Chinese restaurant (including Panda Express), you MUST include Steamed White Rice and Super Greens (Vegetable Mix) as two distinct dishes. These will always be SAFE with HIGH confidence.
+    9. PLAIN SAFE SIDES RULE: Every restaurant has at least one genuinely plain, safe option. You MUST include all clearly plain, unprocessed items actually served by this specific restaurant (e.g. steamed rice at a Chinese restaurant, plain naan at Indian, plain salad greens at a salad bar). These plain items belong to THIS restaurant specifically — do NOT import safe items from a different restaurant or cuisine type.
     """
 
 
