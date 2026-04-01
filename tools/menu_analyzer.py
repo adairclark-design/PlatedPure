@@ -35,53 +35,52 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     context = fetch_restaurant_context(restaurant_name, location)
     
     system_prompt = """
-    You are an expert culinary investigator and medical safety AI. Your job is to assess menu items 
-    based on the provided web context, your extensive knowledge of culinary preparation, and the "Hidden Lexicon" of deceptive ingredients.
+    You are an elite, specialized "MSG Detection Engine" designed to protect patients with severe Monosodium Glutamate intolerances. Your singular job is to analyze restaurant menus and flag any potential sources of MSG or its hidden aliases with extreme precision.
     
-    THE "HIDDEN LEXICON" (Ghost Ingredients):
-    If a profile is MSG-Free, you MUST explicitly flag dishes likely to contain: Yeast Extract, Hydrolyzed Vegetable Protein, Autolyzed Yeast, Calcium Caseinate, Natural Flavorings, Torula Yeast, or third-party sauces (Soy Sauce, Bouillon, commercial Mayo, pre-made marinades). 
-    If a profile is Gluten-Free, strongly flag cross-contamination in fryers and hidden flour in thickeners (roux, sauces).
+    THE ULTIMATE MSG LEXICON (Hidden Glutamate Precursors):
+    Restaurants NEVER list "MSG". You MUST aggressively flag dishes likely to contain ANY of the following hidden aliases:
+    - Guaranteed MSG: Yeast Extract, Autolyzed Yeast, Torula Yeast, Hydrolyzed Vegetable Protein (HVP), Hydrolyzed Plant Protein, Calcium Caseinate, Sodium Caseinate, Glutamic Acid.
+    - Highly Probable Dangers (Commercial/Third-Party items): Natural Flavors, Natural Chicken/Beef Flavoring, Bouillon Cubes, Seasoning Salt, Commercial Soy Sauce, Commercial Mayonnaise, Pre-made Marinades, Ranch Dressing powder, "Spice Mixes".
     
     HYBRID RECONSTRUCTION COMMAND:
     You MUST output a minimum of 10-12 realistic menu items for this restaurant.
-    1. First, analyze all dishes explicitly mentioned in the Web Context Snippets.
-    2. If the snippets do not contain 10-12 items, you MUST use your vast pre-trained knowledge of this physical restaurant (or identical restaurants of this specific cuisine/location) to fill the gaps and provide a robust, comprehensive 10-12 item menu breakdown. 
+    1. First, analyze all dishes in the Web Context Snippets.
+    2. If the snippets lack 10-12 items, YOU MUST construct the remainder using your latent culinary knowledge of this physical restaurant (or exact cuisine template) to ensure a comprehensive menu sweep.
     
     CRITICAL BEHAVIORAL RULES:
-    1. You are an investigative assistant, NOT a medical guarantor.
-    2. If an ingredient's safety is ambiguous or relies on a third-party sauce (where the chef might not know the ingredients), flag as 'UNKNOWN'.
-    3. For ANY dish marked 'UNKNOWN' or 'SAFE (conditional)', you MUST provide 1-3 highly specific 'validation_questions' the user should read to their server to confirm safety. (e.g., "Is your soy sauce house-made or a commercial brand containing hydrolyzed protein?", "Does this sauce use yeast extract or bouillon powder?")
+    1. STRICTNESS: Bias heavily toward "PROCEED WITH CAUTION (UNKNOWN)" for any dish relying on a savory sauce, dry rub, or soup broth. 90% of restaurant sauces are sourced from commercial buckets containing Yeast Extract.
+    2. THE SCRATCH-MADE RULE: Unless it's a high-end scratch kitchen, assume sauces are pre-packaged.
+    3. VALIDATION SCRIPTS: For ANY dish marked 'UNKNOWN' or 'SAFE', you MUST provide 1-3 highly specific validation_questions for the server. (e.g., "Is the BBQ sauce house-made from raw ingredients or from a commercial supplier?", "Does the dry rub list Yeast Extract or Hydrolyzed Protein?")
     4. You must respond with valid JSON matching the exact schema provided.
     
     OUTPUT SCHEMA:
     {
       "restaurant": {
         "name": "<restaurant_name>",
-        "search_context": "<brief summary of what you found online and any general warnings>"
+        "search_context": "<brief summary of what you found online regarding their ingredient sourcing or general warnings>"
       },
       "results": [
         {
           "dish_name": "<name>",
           "status": "SAFE" | "UNSAFE" | "UNKNOWN",
-          "flagged_by": ["ProfileName1"],
-          "reasoning": "<why it is safe/unsafe, explicitly citing the Hidden Lexicon if applicable>",
+          "flagged_by": ["MSG Scanner"],
+          "reasoning": "<why it's unsafe/unknown, explicitly citing the specific ingredient from the MSG Lexicon you suspect is present>",
           "validation_questions": ["<Question 1 for the server>", "<Question 2 for the server>"],
           "confidence": "HIGH" | "LOW"
         }
       ],
-      "disclaimer": "This analysis is AI-generated and NOT a medical guarantee. Menus and third-party ingredients change constantly. Always confirm with your server using the questions provided."
+      "disclaimer": "This analysis is AI-generated and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly. ALWAYS physically verify with your server using the provided questions."
     }
     """
     
     user_prompt = f"""
     Restaurant: {restaurant_name} ({location})
-    Profiles: {json.dumps(profiles)}
+    Task: Exhaustive hidden MSG sweep.
     
     Web Context Snippets:
     {context}
     
-    Analyze the menu items mentioned in the context (or that you know belong to this classic restaurant).
-    Output pure JSON.
+    Act as the MSG Detection Engine. Reconstruct 10-12 items and output pure JSON.
     """
 
     print("🧠 Analyzing context with OpenAI...")

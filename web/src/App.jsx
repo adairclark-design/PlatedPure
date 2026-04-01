@@ -1,26 +1,9 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
-// Full allergen/diet restriction list
-const RESTRICTIONS = [
-  { id: 'gluten',    label: 'Gluten-Free',      emoji: '🌾' },
-  { id: 'msg',       label: 'MSG-Free',          emoji: '🧪' },
-  { id: 'peanuts',   label: 'Peanut-Free',       emoji: '🥜' },
-  { id: 'tree_nuts', label: 'Tree Nut-Free',     emoji: '🌰' },
-  { id: 'dairy',     label: 'Dairy-Free',        emoji: '🥛' },
-  { id: 'eggs',      label: 'Egg-Free',          emoji: '🥚' },
-  { id: 'shellfish', label: 'Shellfish-Free',    emoji: '🦞' },
-  { id: 'fish',      label: 'Fish-Free',         emoji: '🐟' },
-  { id: 'soy',       label: 'Soy-Free',          emoji: '🫘' },
-  { id: 'keto',      label: 'Keto',              emoji: '🥩' },
-  { id: 'vegan',     label: 'Vegan',             emoji: '🌿' },
-  { id: 'vegetarian',label: 'Vegetarian',        emoji: '🥦' },
-]
-
 function App() {
   const [restaurantName, setRestaurantName] = useState('')
   const [location, setLocation] = useState('')
-  const [selected, setSelected] = useState(new Set())
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
@@ -38,32 +21,19 @@ function App() {
     setHasAcceptedTOS(true)
   }
 
-  const toggleRestriction = (id) => {
-    setSelected(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
   const handleSearch = async (e) => {
     e.preventDefault()
-    if (!restaurantName || !location || selected.size === 0) return
+    if (!restaurantName || !location) return
 
     setLoading(true)
     setError(null)
     setResults(null)
 
-    // Build restriction labels from selected IDs
-    const activeRestrictions = RESTRICTIONS
-      .filter(r => selected.has(r.id))
-      .map(r => r.label)
-
     const payload = {
       restaurant_name: restaurantName,
       location: location,
       profiles: [
-        { name: 'You', restrictions: activeRestrictions }
+        { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
       ]
     }
 
@@ -144,16 +114,16 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-icon">⚠️</div>
-            <h2 className="modal-title">Medical Disclaimer</h2>
+            <h2 className="modal-title">MSG Danger Protocol</h2>
             <div className="modal-text">
               <p style={{ marginBottom: '1rem' }}>
-                PlatedPure is an <strong>AI-powered investigative tool</strong>, NOT a medical advisor or safety guarantor.
+                PlatedPure is an <strong>Enterprise MSG-Sweeper</strong>, NOT a medical guarantor.
               </p>
               <p style={{ marginBottom: '1rem' }}>
-                Because restaurants frequently change recipes, use third-party sauces with hidden ingredients (like yeast extract for MSG), and have cross-contamination risks, <strong>AI analysis alone is never 100% safe.</strong>
+                Because restaurants legally hide high-glutamate ingredients under deceptive names like <strong>"Yeast Extract"</strong> and <strong>"Natural Flavors"</strong>, AI analysis alone is never 100% safe.
               </p>
               <p>
-                You must <strong>ALWAYS</strong> use the provided "Server Scripts" to verify hidden ingredients with the restaurant staff before eating.
+                You must <strong>ALWAYS</strong> use the provided "Server Scripts" to verify sauce and rub sourcing with the restaurant staff before eating.
               </p>
             </div>
             <button className="accept-btn" onClick={handleAcceptTOS}>
@@ -165,33 +135,13 @@ function App() {
 
       <header className="header">
         <h1>PlatedPure</h1>
-        <div className="header-badge">AI-Powered Allergen &amp; Additive Navigation</div>
+        <div className="header-badge">Enterprise MSG Detection Engine</div>
       </header>
 
       <main>
         <div className="glass-card search-form">
           <form onSubmit={handleSearch}>
-            {/* Allergen Selector */}
-            <div className="input-group">
-              <div className="section-label">What Are We Avoiding?</div>
-              <p className="selector-hint">Select all dietary restrictions that apply</p>
-              <div className="restriction-grid">
-                {RESTRICTIONS.map(r => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    className={`restriction-tag ${selected.has(r.id) ? 'active' : ''}`}
-                    onClick={() => toggleRestriction(r.id)}
-                  >
-                    <span className="tag-emoji">{r.emoji}</span>
-                    <span className="tag-label">{r.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Restaurant Fields */}
-            <div className="section-divider" />
             <div className="input-group">
               <div className="section-label">Restaurant Name</div>
               <input
@@ -219,14 +169,10 @@ function App() {
             <button
               type="submit"
               className="submit-btn"
-              disabled={loading || selected.size === 0}
+              disabled={loading}
             >
-              {loading ? 'AI scanning menu...' : 'Analyze Menu'}
+              {loading ? 'Executing MSG Sweep...' : 'Scan For Hidden MSG'}
             </button>
-
-            {selected.size === 0 && !loading && (
-              <p className="hint-text">👆 Select at least one restriction above to get started</p>
-            )}
           </form>
 
           {error && <div className="error-msg">{error}</div>}
