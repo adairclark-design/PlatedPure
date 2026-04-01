@@ -73,10 +73,11 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     - [TIER 3] ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
     
     CRITICAL BEHAVIORAL RULES:
-    1. STRICT EVIDENCE REPORTING: For every single dish, separate your analysis into 'verified_ingredients' and 'culinary_inference'.
-    2. VERIFIED INGREDIENTS: If and ONLY IF you retrieved an exact, verifiable list of ingredients using your tools, put them as an array of strings in 'verified_ingredients'. If exact data was hidden or not found, this array MUST be empty []. DO NOT hallucinate.
-    3. CULINARY INFERENCE: Explain the risk. If you have verified ingredients, explain exactly which ones match the MSG Danger Tiers. If 'verified_ingredients' is empty, explicitly state "Official exact ingredients unavailable." and then explain standard culinary preparation risks.
-    4. You MUST output a minimum of 15-20 realistic menu items for restaurants (including safe baseline items like plain white rice), and 4-5 items for grocery brands.
+    1. STRICT INGREDIENT REPORTING: For every single dish, you must provide a literal mathematical array of ALL common ingredients comprising it under the 'ingredients' array.
+    2. THE "COMMERCIAL BASELINE" SYNTHESIS: If you physically extracted the EXACT proprietary ingredients from the PDF/web, populate the array and set 'ingredient_source' to "OFFICIAL_SCRAPE". If the corporate data was hidden, you must ACT AS AN INDUSTRIAL FOOD SCIENTIST. You must populate the 'ingredients' array with the exact, standard commercial supply-chain formulation typically used for that dish (e.g. for Turkey, you must list Water, Salt, Dextrose, Carrageenan, Natural Flavors, etc.), and set 'ingredient_source' to "COMMERCIAL_SYNTHESIS". 
+    3. NO VAGUE HEDGING: You are strictly forbidden from writing paragraphs like "Official ingredients unavailable. Typically includes...". The UI is now a mathematical scanner. The UI will render exactly what you put in the 'ingredients' array as chemical chips.
+    4. CULINARY INFERENCE: Use this field to analyze the risk of the 'ingredients' array you generated. Explain which specific additives from the array match the MSG Danger Tiers. 
+    5. BALANCED STRICTNESS: Bias toward "UNKNOWN" for savory sauces, dry rubs, and processed meats due to standard commercial additives. However, genuinely plain items (steamed rice, whole fruit) MUST be formulated with clean baselines and marked SAFE with HIGH confidence.
     """
 
     tools = [
@@ -154,14 +155,19 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
                                     "type": "array",
                                     "items": {"type": "string"}
                                 },
-                                "verified_ingredients": {
+                                "ingredient_source": {
+                                    "type": "string",
+                                    "enum": ["OFFICIAL_SCRAPE", "COMMERCIAL_SYNTHESIS"]
+                                },
+                                "ingredients": {
                                     "type": "array",
+                                    "description": "The exact corporate ingredients, or your synthesized commercial baseline list.",
                                     "items": {"type": "string"}
                                 },
                                 "culinary_inference": {"type": "string"},
                                 "confidence": {"type": "string", "enum": ["HIGH", "LOW"]}
                             },
-                            "required": ["dish_name", "status", "flagged_by", "verified_ingredients", "culinary_inference", "confidence"],
+                            "required": ["dish_name", "status", "flagged_by", "ingredient_source", "ingredients", "culinary_inference", "confidence"],
                             "additionalProperties": False
                         }
                     },

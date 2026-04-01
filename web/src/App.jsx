@@ -61,8 +61,9 @@ function App() {
   const unsafeDishes  = results?.results?.filter(d => d.status.includes('UNSAFE'))    || []
 
   const renderDishCard = (dish, key) => {
-    // Determine if we have hard ingredient data
-    const hasVerifiedIngredients = Array.isArray(dish.verified_ingredients) && dish.verified_ingredients.length > 0;
+    // Determine if we have ingredient data
+    const hasIngredients = Array.isArray(dish.ingredients) && dish.ingredients.length > 0;
+    const isOfficial = dish.ingredient_source === 'OFFICIAL_SCRAPE';
     
     return (
       <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
@@ -76,17 +77,28 @@ function App() {
         <div className="research-log-box">
           <div className="log-header">🛡️ AI MATRIX LOG</div>
           
-          {hasVerifiedIngredients ? (
+          {hasIngredients ? (
             <div className="verified-ingredients" style={{ marginBottom: '1rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <strong style={{ display: 'block', fontSize: '0.85rem', color: 'var(--brand-emerald)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                ✓ Verified Ingredients Found
+              <strong style={{ display: 'block', fontSize: '0.85rem', color: isOfficial ? 'var(--brand-emerald)' : 'var(--brand-sage)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                {isOfficial ? '✓ Official Manufacturer Data' : '⚙️ Synthetic Commercial Formulation'}
               </strong>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {dish.verified_ingredients.map((ing, i) => (
-                  <span key={i} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem' }}>
-                    {ing}
-                  </span>
-                ))}
+                {dish.ingredients.map((ing, i) => {
+                  const isFlagged = dish.flagged_by && dish.flagged_by.some(f => ing.toLowerCase().includes(f.toLowerCase())) || 
+                                    ing.toLowerCase().includes('flavor') || ing.toLowerCase().includes('carrageenan') || ing.toLowerCase().includes('maltodextrin');
+                  return (
+                    <span key={i} style={{ 
+                      background: isFlagged ? 'rgba(235, 174, 52, 0.15)' : 'rgba(255,255,255,0.1)', 
+                      border: isFlagged ? '1px solid rgba(235, 174, 52, 0.3)' : '1px solid transparent',
+                      color: isFlagged ? '#ebae34' : 'inherit',
+                      padding: '0.2rem 0.6rem', 
+                      borderRadius: '4px', 
+                      fontSize: '0.85rem' 
+                    }}>
+                      {ing}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           ) : null}
