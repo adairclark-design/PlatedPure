@@ -118,12 +118,11 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     5. CULINARY INFERENCE: Explain which SPECIFIC additives from the 'ingredients' array match the MSG Danger Tiers. Name the exact ingredient (e.g. 'Natural Flavors is TIER 2').
     6. STRICT FIDELITY + DENSITY: If SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', ONLY output the exact dishes from BACKGROUND CONTEXT. If SOURCE is 'COMMERCIAL_SYNTHESIS', generate the 12-16 most famous, real menu items for that exact restaurant.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
-    8. EVIDENCE-BASED CLASSIFICATION — CRITICAL RULE:
-       - SAFE: Assign ONLY when the ingredients array contains NO Tier 1, Tier 2, or Tier 3 ingredients. Plain items like Steamed White Rice (ingredients: ['Water', 'Long-Grain White Rice']) MUST be SAFE with HIGH confidence. Super Greens / Mixed Vegetables (ingredients: ['Broccoli', 'Kale', 'Cabbage', 'Snap Peas']) MUST be SAFE with HIGH confidence.
-       - UNKNOWN: Assign when there is indirect risk — a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
-       - UNSAFE: Assign ONLY when you have placed a confirmed Tier 1, 2, or 3 ingredient directly in the 'ingredients' array at the top level. The flagged ingredient must appear verbatim in the array.
-       - DO NOT assign UNSAFE unless a flagged ingredient appears as a top-level atomic item in the ingredients array.
-    9. PLAIN SAFE SIDES RULE: Every restaurant has at least one genuinely plain, safe option. You MUST include all clearly plain, unprocessed items actually served by this specific restaurant (e.g. steamed rice at a Chinese restaurant, plain naan at Indian, plain salad greens at a salad bar). These plain items belong to THIS restaurant specifically — do NOT import safe items from a different restaurant or cuisine type.
+    8. EVIDENCE-BASED CLASSIFICATION - CRITICAL RULE:
+       - SAFE: Assign ONLY when the ingredients array contains NO Tier 1, Tier 2, or Tier 3 ingredients. Simple, unprocessed items MUST be SAFE with HIGH confidence.
+       - UNKNOWN: Assign when there is indirect risk - a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
+       - UNSAFE: Assign ONLY when you have placed a confirmed Tier 1, 2, or 3 ingredient directly in the 'ingredients' array at the top level.
+    9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If there are zero safe items on their real menu, do not invent one.
     """
 
 
@@ -191,7 +190,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             temperature=0.1,
             messages=[
                 {"role": "system", "content": system_prompt},
