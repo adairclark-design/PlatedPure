@@ -30,8 +30,9 @@ def fetch_restaurant_context(search_query: str, location: str) -> dict:
     Deep Scrape Engine: Runs multi-vector DDGS queries for both restaurants and grocery products.
     """
     queries = [
-        f'"{search_query}" ingredients label MSG allergy',
-        f'"{search_query}" {location} (MSG OR "yeast extract" OR allergy) reviews'
+        f'"{search_query}" "ingredients" (nutrition OR allergen OR "contains") exact list',
+        f'"{search_query}" (site:menustat.org OR site:fooducate.com OR site:smartlabel.org) ingredients',
+        f'"{search_query}" {location} (MSG OR "yeast extract") reviews'
     ]
     
     context_snippets = []
@@ -85,10 +86,11 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
     Condition 2 (Grocery Product Context): If the user searched for a specific packaged consumer product intended to be bought off a shelf (e.g. "Doritos Cool Ranch", "Heinz Ketchup", "Campbell's Chicken Noodle Soup"), analyze that specific product. DO NOT invent a 15-item menu. Instead, output 4-5 results: the searched product first, then 3-4 Alternative Brand options or Flavor Variants.
     
     CRITICAL BEHAVIORAL RULES:
-    1. BALANCED STRICTNESS: Bias toward "UNKNOWN (Proceed With Caution)" for savory sauces, dry rubs, soups, and marinades. However, genuinely plain items (steamed rice, plain steamed vegetables, whole fruit, packaged items with a fully confirmed clean label) MUST be marked SAFE. Never mark a dish UNKNOWN just because you lack information — investigate and reason carefully.
-    2. THE SCRATCH-MADE RULE: Unless explicitly confirmed as a high-end scratch kitchen, assume sauces/rubs are pre-packaged.
-    3. THE RESEARCH LOG (PROOF OF WORK): For every single dish, write a technical but readable 'research_log'. CRITICAL: NEVER use the word "Tier" or "Tiers". Use terms like "highly-probable hidden MSG aliases" or "known commercial bases". Explicitly state which chemical aliases were cross-referenced and what scraping observations led to the conclusion.
-    4. Output valid JSON matching the exact schema.
+    1. STRICT EVIDENCE REPORTING: For every single dish, you must now separate your analysis into two distinct fields: 'verified_ingredients' and 'culinary_inference'.
+    2. VERIFIED INGREDIENTS: If and ONLY IF the deep scan returned an exact, verifiable list of ingredients for the dish, provide them as a comma-separated array of strings in 'verified_ingredients'. If the exact ingredients are NOT found in the text, this array MUST be empty []. DO NOT hallucinate ingredients into this list.
+    3. CULINARY INFERENCE: Use this field to explain the risk. If you have verified ingredients, explain exactly which ones match the MSG Danger Tiers. If the 'verified_ingredients' array is empty, explicitly state "Official exact ingredients unavailable." and then explain the standard culinary preparation risks (e.g., why American-Chinese Chow Mein typically contains Soy Sauce).
+    4. BALANCED STRICTNESS: Bias toward "UNKNOWN" for savory sauces, dry rubs, and soups. However, genuinely plain items (steamed rice, whole fruit, packaged items with a clean label) MUST be marked SAFE with HIGH confidence. Never mark a dish UNKNOWN just because you lack information - investigate and reason carefully based on culinary norms.
+    5. Output valid JSON matching the exact schema. NEVER use the word "Tier" in your final output text.
     
     OUTPUT SCHEMA:
     {
@@ -99,18 +101,19 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
       },
       "restaurant": {
         "name": "<restaurant_name>",
-        "search_context": "<brief summary of the Deep Scrape findings regarding their ingredient sourcing>"
+        "search_context": "<brief summary of the Deep Scrape findings regarding their ingredient sourcing and transparency>"
       },
       "results": [
         {
           "dish_name": "<name>",
           "status": "SAFE" | "UNSAFE" | "UNKNOWN",
           "flagged_by": ["MSG Scanner"],
-          "research_log": "<Highly technical explanation of the matrix sweep and alias checks performed for this dish>",
+          "verified_ingredients": ["<ingredient_1>", "<ingredient_2>"] | [],
+          "culinary_inference": "<Explanation of verified ingredients, OR statement that ingredients are hidden followed by culinary risk analysis>",
           "confidence": "HIGH" | "LOW"
         }
       ],
-      "disclaimer": "This analysis is AI-generated using Deep Web Scraping and NOT a medical guarantee. Hidden MSG and third-party sauces change constantly."
+      "disclaimer": "This analysis is an investigative guide. Unlisted ingredients and third-party commercial sauces change constantly."
     }
     """
     

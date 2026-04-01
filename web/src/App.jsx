@@ -60,27 +60,48 @@ function App() {
   const unknownDishes = results?.results?.filter(d => d.status.includes('UNKNOWN'))   || []
   const unsafeDishes  = results?.results?.filter(d => d.status.includes('UNSAFE'))    || []
 
-  const renderDishCard = (dish, key) => (
-    <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
-      <div className="dish-header">
-        <h3 className="dish-name">{dish.dish_name}</h3>
-        <span className={`dish-status ${getBadgeClass(dish.status)}`}>
-          {dish.status}
-        </span>
-      </div>
-
-      <div className="research-log-box">
-        <div className="log-header">🛡️ AI MATRIX LOG</div>
-        <p className="log-content">{dish.research_log || dish.reasoning}</p>
-      </div>
-
-      {dish.confidence && (
-        <div className="confidence-tag">
-          {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
+  const renderDishCard = (dish, key) => {
+    // Determine if we have hard ingredient data
+    const hasVerifiedIngredients = Array.isArray(dish.verified_ingredients) && dish.verified_ingredients.length > 0;
+    
+    return (
+      <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
+        <div className="dish-header">
+          <h3 className="dish-name">{dish.dish_name}</h3>
+          <span className={`dish-status ${getBadgeClass(dish.status)}`}>
+            {dish.status}
+          </span>
         </div>
-      )}
-    </div>
-  )
+
+        <div className="research-log-box">
+          <div className="log-header">🛡️ AI MATRIX LOG</div>
+          
+          {hasVerifiedIngredients ? (
+            <div className="verified-ingredients" style={{ marginBottom: '1rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <strong style={{ display: 'block', fontSize: '0.85rem', color: 'var(--brand-emerald)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                ✓ Verified Ingredients Found
+              </strong>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {dish.verified_ingredients.map((ing, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                    {ing}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <p className="log-content">{dish.culinary_inference || dish.research_log || dish.reasoning}</p>
+        </div>
+
+        {dish.confidence && (
+          <div className="confidence-tag">
+            {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="container">
@@ -194,7 +215,7 @@ function App() {
                     {unsafeDishes.map((dish, idx) => (
                       <div className="unsafe-list-item" key={`unsf-${idx}`}>
                         <div className="unsafe-name"><strong>{dish.dish_name}</strong></div>
-                        <div className="unsafe-reason">{dish.research_log || dish.reasoning}</div>
+                        <div className="unsafe-reason">{dish.culinary_inference || dish.research_log || dish.reasoning}</div>
                       </div>
                     ))}
                   </div>
