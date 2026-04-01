@@ -33,15 +33,23 @@ def layer1_spoonacular(restaurant_name: str) -> str:
             return ""
             
         compiled_text = f"SPOONACULAR OFFICIAL DATA FOR {restaurant_name}:\n"
-        for item in menu_items:
-            # Step 2: Grab the exact ingredients for each item id
-            item_id = item.get("id")
-            info_url = f"https://api.spoonacular.com/food/menuItems/{item_id}?apiKey={SPOONACULAR_API_KEY}"
-            info_resp = requests.get(info_url, timeout=5).json()
-            # Some items might only have nutrition, no explicit string of 'ingredients' depending on spoonacular data structure, varying wildly
-            # Spoonacular usually provides a list of badges/nutrition but sometimes raw ingredients.
-            nutrition_context = json.dumps(info_resp.get('nutrition', {})) 
-            compiled_text += f"- Dish: {item.get('title')} | Macros: {nutrition_context}\n"
+        
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        def fetch_item_info(item):
+            try:
+                item_id = item.get("id")
+                info_url = f"https://api.spoonacular.com/food/menuItems/{item_id}?apiKey={SPOONACULAR_API_KEY}"
+                info_resp = requests.get(info_url, timeout=5).json()
+                nutrition_context = json.dumps(info_resp.get('nutrition', {})) 
+                return f"- Dish: {item.get('title')} | Macros: {nutrition_context}\n"
+            except Exception:
+                return ""
+                
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(fetch_item_info, item) for item in menu_items]
+            for future in as_completed(futures):
+                compiled_text += future.result()
             
         return compiled_text
     except Exception as e:
