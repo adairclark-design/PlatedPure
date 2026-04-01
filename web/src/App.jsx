@@ -189,7 +189,7 @@ function App() {
                   </div>
                   <div className="metric">
                     <span className="metric-icon">📄</span>
-                    <strong>{results.telemetry.chars_scraped?.toLocaleString() || 0}</strong> Review Characters Ingested
+                    <strong>{results.telemetry.chars_scraped ? Math.round(results.telemetry.chars_scraped / 5).toLocaleString() : 0}</strong> Words of Review Data Scanned
                   </div>
                   <div className="metric" style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1rem' }}>
                     <span className="metric-icon">🧪</span>
