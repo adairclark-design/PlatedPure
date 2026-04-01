@@ -23,8 +23,8 @@ def layer1_spoonacular(restaurant_name: str) -> str:
         
     print(f"🟢 LAYER 1 ACTIVE: Querying Spoonacular for {restaurant_name}...")
     try:
-        # Step 1: Search for the restaurant menu items
-        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=10&apiKey={SPOONACULAR_API_KEY}"
+        # Step 1: Search for the restaurant menu items (increased to 25 to grab actual entrees)
+        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=25&apiKey={SPOONACULAR_API_KEY}"
         search_resp = requests.get(search_url, timeout=5).json()
         menu_items = search_resp.get("menuItems", [])
         
@@ -105,6 +105,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     4. NO VAGUE HEDGING: You are strictly forbidden from writing paragraphs like "Typically includes...". The UI renders the 'ingredients' array as chemical chips.
     5. CULINARY INFERENCE: Explain which specific additives from the 'ingredients' array match the MSG Danger Tiers. 
     6. STRICT MENU FIDELITY: If the DATA ACQUISITION SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', you must ONLY output the exact dishes provided in the BACKGROUND CONTEXT. Do not invent, pad, or add a single extra item. If the SOURCE is 'COMMERCIAL_SYNTHESIS', generate 8 to 12 of the most famous, literal menu items that belong exclusively to that specific restaurant. Do not hallucinate generic "safe" items like 'Plain beef patty' unless the restaurant is explicitly a burger joint.
+    7. STRICT FILTERING (NO DRINKS/SAUCES): You MUST aggressively drop and ignore all soft drinks, sodas, generic beverages (e.g., Pepsi, Coke, Dr. Pepper), and isolated generic dipping sauces (e.g., Plum Sauce, Ketchup, Mustard). ONLY output and analyze true food items: entrees, appetizers, desserts, and sides.
     """
 
     final_output_schema = {
