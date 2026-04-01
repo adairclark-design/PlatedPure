@@ -123,6 +123,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - UNKNOWN: Assign when there is indirect risk - a sauce or marinade is present whose exact formulation is not known. Default to UNKNOWN for ambiguous cases.
        - UNSAFE: Assign ONLY when you have placed a confirmed direct MSG carrier or high-risk additive directly in the 'ingredients' array at the top level.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If there are zero safe items on their real menu, do not invent one.
+    10. SERVER INTERROGATION SCRIPT: The app is used by people with severe medical allergies. For every SAFE and UNKNOWN dish, provide a 'server_question' string. This must be a specific, direct question the user can read to the waiter to verify safety. Be highly specific to the dish (e.g. 'Does your grill cook the burger in the same butter as the teriyaki chicken?'). For UNSAFE items, leave it null.
     """
 
 
@@ -174,9 +175,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
                                     "items": {"type": "string"}
                                 },
                                 "culinary_inference": {"type": "string"},
+                                "server_question": {"type": ["string", "null"]},
                                 "confidence": {"type": "string", "enum": ["HIGH", "LOW"]}
                             },
-                            "required": ["dish_name", "status", "flagged_by", "ingredient_source", "ingredients", "culinary_inference", "confidence"],
+                            "required": ["dish_name", "status", "flagged_by", "ingredient_source", "ingredients", "culinary_inference", "server_question", "confidence"],
                             "additionalProperties": False
                         }
                     },

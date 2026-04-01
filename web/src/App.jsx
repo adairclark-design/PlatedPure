@@ -119,6 +119,17 @@ function App() {
           <p className="log-content">{dish.culinary_inference || dish.research_log || dish.reasoning}</p>
         </div>
 
+        {dish.server_question && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(235, 174, 52, 0.1)', border: '1px solid rgba(235, 174, 52, 0.3)', borderRadius: '8px' }}>
+            <div style={{ color: 'var(--brand-amber)', fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span>🗣️</span> READ THIS TO YOUR SERVER:
+            </div>
+            <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', fontStyle: 'italic', margin: 0, lineHeight: '1.4' }}>
+              "{dish.server_question}"
+            </p>
+          </div>
+        )}
+
         {dish.confidence && (
           <div className="confidence-tag">
             {dish.confidence === 'HIGH' ? '🎯' : '⚠️'} Confidence: {dish.confidence}
