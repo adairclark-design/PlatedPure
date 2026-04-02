@@ -298,16 +298,11 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list, exclu
     executor = ThreadPoolExecutor(max_workers=1)
     future_social = executor.submit(layer2b_migraine_sentiment, restaurant_name, location)
     
-    # Layer 1: Spoonacular
-    context = layer1_spoonacular(restaurant_name)
+    # Layer 1 (Spoonacular) DISABLED — stale database replaced by live Perplexity scraping.
+    # Layer 2: Perplexity Live-Web Drone is now the PRIMARY data source.
+    context = layer2_perplexity(restaurant_name, location)
     if context:
-        source_tag = "SPOONACULAR_DB"
-    
-    # Layer 2: Perplexity
-    if not context:
-        context = layer2_perplexity(restaurant_name, location)
-        if context:
-            source_tag = "PERPLEXITY_LIVE_SCRAPE"
+        source_tag = "PERPLEXITY_LIVE_SCRAPE"
     
     # Collect social drone result — hard 30s timeout, never blocks Layer 3
     try:
