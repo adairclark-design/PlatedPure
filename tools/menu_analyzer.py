@@ -156,12 +156,11 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     CRITICAL BEHAVIORAL RULES:
     1. STRICT INGREDIENT REPORTING: You must provide a simple, flat array of atomic ingredient names for each dish. Each ingredient must be a SHORT, PLAIN ingredient name (e.g. 'Soy Sauce', 'Cornstarch', 'Natural Flavors'). NEVER write nested parenthetical sub-formulas. Each array item must be a single, atomic ingredient string. NO nesting. MINIMUM 6 ingredients per dish — a dish with 2 ingredients like 'Ground Beef, Taco Shell' is WRONG and incomplete.
     2. THE "COMMERCIAL BASELINE" SYNTHESIS — CRITICAL DEPTH RULE: You are an industrial food scientist with access to commercial supply-chain knowledge. For every dish, you MUST penetrate the ingredient label down to the actual chemical supply-chain level. Examples:
-       - "Ground Beef Seasoning" → MUST list its components: Yeast Extract, Natural Flavors, Maltodextrin, Spices, Salt, Chili Pepper, Paprika
-       - "Taco Bell Seasoned Beef" → MUST list: Ground Beef, Water, Seasoning (Yeast Extract, Maltodextrin, Natural Flavors, Salt, Spices, Paprika, Onion Powder)
-       - "Nacho Cheese Sauce" → MUST list: Processed Cheese, Milk, Sodium Phosphate, Natural Flavors, Yeast Extract
-       - "Grilled Chicken" at KFC → MUST include: Monosodium Glutamate, Salt, Spices in the seasoning blend
-       - "Teriyaki Sauce" → MUST list: Soy Sauce, Sugar, Water, Yeast Extract, Natural Flavors
-       If a dish has pre-made sauces, seasonings, or marinades, you MUST enumerate the chemical ingredients of those sub-components. Never stop at the surface-level description. The user's life depends on this accuracy.
+       - "Taco Bell Seasoned Beef" → MUST list its components: Ground Beef, Yeast Extract, Natural Flavors, Maltodextrin, Spices, Salt, Chili Pepper, Paprika
+       - "KFC Grilled Chicken" → MUST include: Monosodium Glutamate, Salt, Spices in the seasoning blend
+       - "Generic Teriyaki Sauce" → MUST list: Soy Sauce, Sugar, Water, Cornstarch, Natural Flavors (NOTE: Here, 'Natural Flavors' triggers UNCERTAIN. Do not inject 'Yeast Extract' unless it is a definitive industry standard for that chain.)
+       - "House Vinaigrette" → MUST list: Vegetable Oil, Vinegar, Spices, Natural Flavors
+       If a dish has pre-made sauces, seasonings, or marinades, you MUST enumerate the chemical ingredients of those sub-components. MUST NOT auto-inject "Yeast Extract" or "MSG" into every single sauce unless it is a guaranteed industry standard for that chain. Allow "Natural Flavors" and "Soy Sauce" to stand alone for ambiguous items, which correctly triggers UNCERTAIN.
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
     5. USER-FRIENDLY INFERENCE (NO 'TIER' JARGON): Explain the risk of the 'ingredients' array in plain, simple English. DO NOT use the word 'Tier' or 'Tier 1/2/3'. Instead, say exactly why it's harmful, e.g. "Natural Flavors is a high-risk hidden additive," or "Yeast Extract is a guaranteed MSG carrier." If it is safe, say "Contains no MSG-related ingredients."
