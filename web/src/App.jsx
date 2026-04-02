@@ -86,6 +86,24 @@ function App() {
             {dish.status}
           </span>
         </div>
+        
+        {dish.migraine_reported && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#ef4444',
+            padding: '0.5rem 0.8rem',
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <span style={{fontSize: '1.1rem'}}>🤕</span> User Review Warning: Customers report migraines with this dish.
+          </div>
+        )}
 
         <div className="research-log-box">
           <div className="log-header">🛡️ AI MATRIX LOG</div>

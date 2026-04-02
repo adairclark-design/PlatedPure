@@ -97,6 +97,34 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
         return ""
 
 
+def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
+    """LAYER 2B: The Migraine Drone. Dedicated scraping for social sentiment on Yelp/Reddit."""
+    if not OPENROUTER_API_KEY:
+        return "SOCIAL SENTIMENT: Migraine Drone Offline (No API Key)"
+        
+    print(f"🟣 LAYER 2B ACTIVE: Deploying Migraine Sentiment Drone for {restaurant_name}...")
+    try:
+        openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
+        response = openrouter_client.chat.completions.create(
+            model="perplexity/sonar",
+            messages=[
+                {"role": "system", "content": "You are a medical sentiment analyzer. Your sole task is to search user reviews (Yelp, Reddit, TripAdvisor) for the provided restaurant and find any explicit reports of 'migraines' or 'headaches' associated with specific dishes. If you find any, list the exact dish names. If you cannot find any such reports, respond EXACTLY with 'NO_MIGRAINE_REPORTS_FOUND'. Do not write conversational text."},
+                {"role": "user", "content": f"Search customer reviews for '{restaurant_name} {location}'. Are there any reviews mentioning 'migraine' or 'headaches'? List the specific dishes mentioned."}
+            ],
+            timeout=25
+        )
+        data = response.choices[0].message.content
+        if "NO_MIGRAINE_REPORTS_FOUND" in data or "not find" in data.lower() or "do not have" in data.lower():
+            print("🟣 LAYER 2B: No migraine reports found for specific dishes.")
+            return "SOCIAL SENTIMENT: No migraine reports found for specific dishes."
+            
+        print("🟣 LAYER 2B: Migraine reports detected in social sentiment!")
+        return f"SOCIAL SENTIMENT: MIGRAINE REPORTS FOUND in public reviews:\n{data}"
+    except Exception as e:
+        print(f"❌ LAYER 2B ERROR: {e}")
+        return "SOCIAL SENTIMENT: Migraine Social Drone Failed"
+
+
 def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, used_source: str) -> dict:
     """LAYER 3: The Brain. Takes context from Layer 1/2, or falls back to Commercial Baseline Synthesis if empty."""
     print(f"🟠 OVERARCHING BRAIN: Booting GPT-4o JSON Compiler (Data Source: {used_source})")
@@ -136,6 +164,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - UNSAFE: Assign ONLY when the dish contains 'DIRECT MSG / GUARANTEED CARRIERS' (e.g., Monosodium Glutamate, Yeast Extract) OR 'CHEMICAL ENHANCERS'. These are guaranteed toxic.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If they do serve them (like Steamed Rice at a Chinese restaurant or Plain Black Beans at a Mexican restaurant), you MUST include them to provide a complete safety profile. If there are zero safe items on their real menu, do not invent one.
     10. SERVER INTERROGATION SCRIPT: The app is used by people with severe medical allergies. For every SAFE and UNCERTAIN dish, provide a 'server_question' string. This must be a specific, direct question the user can read to the waiter to verify safety. Be highly specific to the dish (e.g. 'Does your grill cook the burger in the same butter as the teriyaki chicken?'). For UNSAFE items, output the exact string "None".
+    11. SOCIAL SENTIMENT FLAG (MIGRAINES): You will receive a "SOCIAL SENTIMENT" block within the BACKGROUND CONTEXT. If this block indicates that customers have explicitly reported 'migraines' or 'headaches' for a specific dish, you MUST set the boolean `migraine_reported` to true for that dish. Otherwise, set it to false.
     """
 
 
@@ -188,9 +217,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
                                 },
                                 "culinary_inference": {"type": "string"},
                                 "server_question": {"type": "string"},
+                                "migraine_reported": {"type": "boolean"},
                                 "confidence": {"type": "string", "enum": ["HIGH", "LOW"]}
                             },
-                            "required": ["dish_name", "status", "flagged_by", "ingredient_source", "ingredients", "culinary_inference", "server_question", "confidence"],
+                            "required": ["dish_name", "status", "flagged_by", "ingredient_source", "ingredients", "culinary_inference", "server_question", "migraine_reported", "confidence"],
                             "additionalProperties": False
                         }
                     },
@@ -221,23 +251,35 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
 def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> dict:
     source_tag = "UNCERTAIN"
     context = ""
+    social_context = ""
     
-    # Layer 1
-    context = layer1_spoonacular(restaurant_name)
-    if context:
-        source_tag = "SPOONACULAR_DB"
+    from concurrent.futures import ThreadPoolExecutor
     
-    # Layer 2
-    if not context:
-        context = layer2_perplexity(restaurant_name, location)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Launch the social sentiment drone in the background immediately
+        future_social = executor.submit(layer2b_migraine_sentiment, restaurant_name, location)
+        
+        # Layer 1
+        context = layer1_spoonacular(restaurant_name)
         if context:
-            source_tag = "PERPLEXITY_LIVE_SCRAPE"
+            source_tag = "SPOONACULAR_DB"
+        
+        # Layer 2
+        if not context:
+            context = layer2_perplexity(restaurant_name, location)
+            if context:
+                source_tag = "PERPLEXITY_LIVE_SCRAPE"
+                
+        # Resolve Social Sentiment Drone
+        social_context = future_social.result()
             
     # Layer 3 / Final Compilation
     if not context:
         source_tag = "COMMERCIAL_SYNTHESIS"
         
-    payload = layer3_gpt4o_compile(restaurant_name, context, profiles, source_tag)
+    full_context = context + "\n\n" + social_context
+        
+    payload = layer3_gpt4o_compile(restaurant_name, full_context, profiles, source_tag)
     
     # Mock telemetry
     if payload.get("telemetry"):
