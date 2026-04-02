@@ -78,8 +78,8 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
-                {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
-                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 dishes if possible."}
+                {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Return ONLY fully assembled, complete menu items (e.g., 'Big Mac', 'Quarter Pounder'). Do NOT output individual raw components, condiments, patties, or sauces like 'Mustard' or 'Lettuce'. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
+                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 fully assembled dishes if possible. Exclude mere condiments."}
             ],
             timeout=30
         )
@@ -168,7 +168,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - If SOURCE is 'SPOONACULAR_DB': You MUST analyze and synthesize ingredients for EVERY SINGLE DISH provided in the background context. DO NOT SKIP ANY DISH. If there are 35 dishes listed, you MUST output an array of 35 items. Skipping dishes is a critical system failure.
        - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim. Output EVERY SINGLE ONE.
        - If SOURCE is 'COMMERCIAL_SYNTHESIS': You MUST generate exactly 30 to 35 most famous real menu items for that exact restaurant. Outputting fewer than 25 items is a critical systemic failure. INCLUDE a diverse mix of entrees AND the plain unprocessed sides.
-    7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
+    7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. Furthermore, DROP all individual raw ingredients, fragmented components, and solo condiments (e.g., 'Lettuce', 'Mustard', 'Sauce', 'Pattie'). ONLY output true full food dishes: completely assembled entrees, appetizers, desserts, and side-dishes.
     8. EVIDENCE-BASED CLASSIFICATION — THIS IS THE ONLY RULE THAT DETERMINES STATUS:
        - SAFE: Assign ONLY when the ingredients array is 100% clean (no MSG definitions). Simple, unprocessed items MUST be SAFE with HIGH confidence.
        - UNCERTAIN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
