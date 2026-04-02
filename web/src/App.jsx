@@ -50,7 +50,11 @@ function App() {
       if (!response.ok) throw new Error('Analysis failed. Please try again.')
       setResults(await response.json())
     } catch (err) {
-      setError(err.message)
+      if (err.message === 'Failed to fetch') {
+        setError('Network connection refused (Failed to fetch). The AI engine is currently restarting for an update or experiencing heavy load. Please wait 60 seconds and try again.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }
