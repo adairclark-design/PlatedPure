@@ -270,14 +270,21 @@ function App() {
               )}
 
               {/* 💬 Proceed With Caution */}
-              {uncertainDishes.length > 0 && (
-                <div className="dish-tier" style={{ marginTop: '2rem' }}>
-                  <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>
-                    💬 Proceed With Caution
-                  </h3>
-                  {uncertainDishes.map((dish, idx) => renderDishCard(dish, `unc-${idx}`))}
-                </div>
-              )}
+              <div className="dish-tier" style={{ marginTop: '2rem' }}>
+                <h3 className="tier-header" style={{ color: 'var(--brand-amber)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-amber)', paddingBottom: '0.5rem' }}>
+                  💬 Proceed With Caution
+                </h3>
+                {uncertainDishes.length > 0 ? (
+                  uncertainDishes.map((dish, idx) => renderDishCard(dish, `unc-${idx}`))
+                ) : (
+                  <div className="glass-card dish-card dish-unknown" style={{ textAlign: 'center', opacity: 0.85 }}>
+                    <h3 style={{ color: 'var(--brand-amber)', marginBottom: '0.5rem', fontSize: '1.2rem' }}>No Ambiguous Items Found</h3>
+                    <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', maxWidth: '600px', margin: '0 auto' }}>
+                      The AI polarized all items from this restaurant into either explicitly <strong style={{color:'var(--safe)'}}>Safe</strong> or definitively <strong style={{color:'var(--unsafe)'}}>Unsafe</strong>. No menu items fell into the ambiguous grey area.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* ⛔ Unsafe Items */}
               {unsafeDishes.length > 0 && (
