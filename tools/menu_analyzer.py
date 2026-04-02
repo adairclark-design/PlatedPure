@@ -169,6 +169,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim. Output EVERY SINGLE ONE.
        - If SOURCE is 'COMMERCIAL_SYNTHESIS': You MUST generate exactly 30 to 35 most famous real menu items for that exact restaurant. Outputting fewer than 25 items is a critical systemic failure. INCLUDE a diverse mix of entrees AND the plain unprocessed sides.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. Furthermore, DROP all individual raw ingredients, fragmented components, and solo condiments (e.g., 'Lettuce', 'Mustard', 'Sauce', 'Pattie'). ONLY output true full food dishes: completely assembled entrees, appetizers, desserts, and side-dishes.
+    7b. SAUCE SAFETY PANEL (SEPARATE ARRAY): Separately, you MUST populate the top-level `sauces` array with ALL dipping sauces, condiments, and dressings available at this restaurant (e.g. Ketchup, Ranch, BBQ Sauce, Honey Mustard, Secret Sauce, Buffalo Sauce, Sriracha). For each sauce, classify it as SAFE, UNCERTAIN, or UNSAFE using the exact same MSG Chemical Database rules. Provide a one-sentence reason. Aim for 6–12 sauces. This array is COMPLETELY SEPARATE from the main `results` dish array.
     8. EVIDENCE-BASED CLASSIFICATION — THIS IS THE ONLY RULE THAT DETERMINES STATUS:
        - SAFE: Assign ONLY when the ingredients array is 100% clean (no MSG definitions). Simple, unprocessed items MUST be SAFE with HIGH confidence.
        - UNCERTAIN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
@@ -235,9 +236,22 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
                             "additionalProperties": False
                         }
                     },
+                    "sauces": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "status": {"type": "string", "enum": ["SAFE", "UNCERTAIN", "UNSAFE"]},
+                                "reason": {"type": "string"}
+                            },
+                            "required": ["name", "status", "reason"],
+                            "additionalProperties": False
+                        }
+                    },
                     "disclaimer": {"type": "string"}
                 },
-                "required": ["telemetry", "restaurant", "results", "disclaimer"],
+                "required": ["telemetry", "restaurant", "results", "sauces", "disclaimer"],
                 "additionalProperties": False
             }
         }

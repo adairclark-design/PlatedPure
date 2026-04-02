@@ -8,6 +8,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
+  const [sauceOpen, setSauceOpen] = useState(null)
 
   // Pre-warm the Render backend the moment the page loads.
   // Render spins down after inactivity — this silent ping wakes it up
@@ -249,6 +250,43 @@ function App() {
               <h2>{results.restaurant?.name}</h2>
               <p className="context">{results.restaurant?.search_context}</p>
             </div>
+
+            {/* 🍶 Sauce Safety Snapshot */}
+            {results.sauces && results.sauces.length > 0 && (
+              <div className="glass-card sauce-bar">
+                <div className="sauce-bar-header">
+                  <span className="sauce-bar-title">🍶 Sauce Safety Snapshot</span>
+                  <span className="sauce-bar-subtitle">Tap any sauce for details</span>
+                </div>
+                <div className="sauce-pills-row">
+                  {results.sauces.map((sauce, i) => {
+                    const isOpen = sauceOpen === i
+                    const color = sauce.status === 'SAFE' ? 'var(--brand-emerald)' :
+                                  sauce.status === 'UNSAFE' ? 'var(--unsafe)' : 'var(--brand-amber)'
+                    const bg    = sauce.status === 'SAFE' ? 'rgba(52, 211, 153, 0.12)' :
+                                  sauce.status === 'UNSAFE' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(235, 174, 52, 0.12)'
+                    const icon  = sauce.status === 'SAFE' ? '✅' : sauce.status === 'UNSAFE' ? '⛔' : '⚠️'
+                    return (
+                      <div key={i} className="sauce-pill-wrapper">
+                        <button
+                          className="sauce-pill"
+                          style={{ color, background: bg, borderColor: color }}
+                          onClick={() => setSauceOpen(isOpen ? null : i)}
+                        >
+                          <span>{icon}</span>
+                          <span>{sauce.name}</span>
+                        </button>
+                        {isOpen && (
+                          <div className="sauce-tooltip" style={{ borderColor: color }}>
+                            <span style={{ color }}>{sauce.status}</span> — {sauce.reason}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="dishes-feed">
               {/* ✅ Safe Options */}
