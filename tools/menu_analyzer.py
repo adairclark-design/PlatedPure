@@ -24,7 +24,7 @@ def layer1_spoonacular(restaurant_name: str) -> str:
         
     print(f"🟢 LAYER 1 ACTIVE: Querying Spoonacular for {restaurant_name}...")
     try:
-        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=30&apiKey={SPOONACULAR_API_KEY}"
+        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=60&apiKey={SPOONACULAR_API_KEY}"
         search_resp = requests.get(search_url, timeout=5).json()
         menu_items = search_resp.get("menuItems", [])
         
@@ -79,7 +79,7 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
             model="perplexity/sonar",
             messages=[
                 {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
-                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 10 dishes."}
+                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 dishes if possible."}
             ],
             timeout=30
         )
@@ -166,9 +166,9 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
     5. USER-FRIENDLY INFERENCE (NO 'TIER' JARGON): Explain the risk of the 'ingredients' array in plain, simple English. DO NOT use the word 'Tier' or 'Tier 1/2/3'. Instead, say exactly why it's harmful, e.g. "Natural Flavors is a high-risk hidden additive," or "Yeast Extract is a guaranteed MSG carrier." If it is safe, say "Contains no MSG-related ingredients."
     6. STRICT FIDELITY + DENSITY: 
-       - If SOURCE is 'SPOONACULAR_DB': The BACKGROUND CONTEXT contains a verified list of CONFIRMED real dish names from Spoonacular. You MUST analyze ONLY those exact dish names — no additions or substitutions. For each named dish, synthesize the standard commercial ingredient formulation used at that restaurant and classify for MSG risk.
-       - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim.
-       - If SOURCE is 'COMMERCIAL_SYNTHESIS': Generate the 12-16 most famous real menu items for that exact restaurant. MUST include a diverse mix of entrees AND the plain unprocessed sides (e.g. steamed rice, plain veggies) that the restaurant is known to serve.
+       - If SOURCE is 'SPOONACULAR_DB': You MUST analyze and synthesize ingredients for EVERY SINGLE DISH provided in the background context. DO NOT SKIP ANY DISH. If there are 60 dishes listed, you MUST output an array of 60 items. Skipping dishes is a critical system failure.
+       - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim. Output EVERY SINGLE ONE.
+       - If SOURCE is 'COMMERCIAL_SYNTHESIS': You MUST generate exactly 45 to 50 most famous real menu items for that exact restaurant. Outputting fewer than 40 items is a critical systemic failure. INCLUDE a diverse mix of entrees AND the plain unprocessed sides.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
     8. EVIDENCE-BASED CLASSIFICATION — THIS IS THE ONLY RULE THAT DETERMINES STATUS:
        - SAFE: Assign ONLY when the ingredients array is 100% clean (no MSG definitions). Simple, unprocessed items MUST be SAFE with HIGH confidence.
@@ -248,9 +248,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             temperature=0.1,
+            max_tokens=16384,
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Compile the final json payload for {restaurant_name} using the context provided."}
+                {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 45 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 40 results is a systemic failure."}
             ],
             response_format=final_output_schema
         )
