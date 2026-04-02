@@ -248,7 +248,6 @@ function App() {
             {/* Restaurant Summary */}
             <div className="results-header glass-card">
               <h2>{results.restaurant?.name}</h2>
-              <p className="context">{results.restaurant?.search_context}</p>
             </div>
 
             {/* 🍶 Sauce Safety Snapshot */}
