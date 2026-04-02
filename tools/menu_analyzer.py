@@ -14,6 +14,7 @@ SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1") if OPENROUTER_API_KEY else None
 
 def layer1_spoonacular(restaurant_name: str) -> str:
     """LAYER 1: The Database. Extracts verified dish names from Spoonacular for menu accuracy.
@@ -74,7 +75,6 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
         
     print(f"🔵 LAYER 2 ACTIVE: Deploying Perplexity Web Drone for {restaurant_name} {location}...")
     try:
-        openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
@@ -104,7 +104,6 @@ def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
         
     print(f"🟣 LAYER 2B ACTIVE: Deploying Migraine Sentiment Drone for {restaurant_name}...")
     try:
-        openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1")
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
@@ -270,8 +269,11 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     }
 
     try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
+        if not openrouter_client:
+            raise Exception("OpenRouter API Key Missing")
+
+        response = openrouter_client.chat.completions.create(
+            model="anthropic/claude-3.7-sonnet",
             temperature=0.1,
             max_tokens=16384,
             messages=[
