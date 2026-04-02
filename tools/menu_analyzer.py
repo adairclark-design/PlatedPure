@@ -12,6 +12,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
+JINA_API_KEY = os.environ.get("JINA_API_KEY", "")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1") if OPENROUTER_API_KEY else None
@@ -66,35 +68,80 @@ def layer1_spoonacular(restaurant_name: str) -> str:
         return ""
 
 
-
-def layer2_perplexity(restaurant_name: str, location: str) -> str:
-    """LAYER 2: The Live Drone. Uses Perplexity via OpenRouter to bypass Cloudflare and scrape exact PDFs."""
+def _drone_worker(restaurant_name: str, location: str, target_instructions: str, drone_name: str) -> str:
     if not OPENROUTER_API_KEY:
-        print("🔵 LAYER 2 SKIPPED: Missing OPENROUTER_API_KEY")
         return ""
-        
-    print(f"🔵 LAYER 2 ACTIVE: Deploying Perplexity Web Drone for {restaurant_name} {location}...")
     try:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
                 {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Return ONLY fully assembled, complete menu items (e.g., 'Big Mac', 'Quarter Pounder'). Do NOT output individual raw components, condiments, patties, or sauces like 'Mustard' or 'Lettuce'. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
-                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name} located near {location}. CRITICAL: To bypass Cloudflare bot protection, you MUST explicitly target secondary academic and nutrition databases. Specifically search domains like menustat.org, fastfoodnutrition.org, nutritionix.com, and explicitly search for '.pdf allergen' documents. Do NOT rely on the official restaurant homepage. Where relevant, look for any location-specific menu items for the {location} area. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 fully assembled dishes if possible. Exclude mere condiments."}
+                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name} located near {location}. {target_instructions} Where relevant, look for any location-specific menu items for the {location} area. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 20 fully assembled dishes if possible. Exclude mere condiments."}
             ],
             timeout=30
         )
         data = response.choices[0].message.content
-        if "not find" in data.lower() or "do not have" in data.lower() or "cannot access" in data.lower() or "INSUFFICIENT_DATA" in data:
-            print("🟡 LAYER 2 FAILED: Drone could not locate proprietary data on the open web.")
+        if "not find" in data.lower() or "do not have" in data.lower() or "INSUFFICIENT_DATA" in data:
             return ""
-        # Quality gate: response must be substantial structured data (not meta-commentary)
-        if len(data) < 1500 or data.count(':') < 5:
-            print(f"🟡 LAYER 2 INSUFFICIENT: Response is meta-commentary, not structured ingredient data ({len(data)} chars, {data.count(':')} colons). Falling to Layer 3 Synthesis.")
-            return ""
-        return f"PERPLEXITY LIVE-WEB SCRAPE DATA:\n{data}"
+        return f"\n--- {drone_name} RESULTS ---\n{data}\n"
     except Exception as e:
-        print(f"❌ LAYER 2 ERROR: {e}")
+        print(f"❌ {drone_name} ERROR: {e}")
         return ""
+
+def layer2_perplexity(restaurant_name: str, location: str) -> str:
+    """LAYER 2: Dual-Drone Pincer. Fires two simultaneous Perplexity queries at different domains."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    print(f"🔵 LAYER 2 ACTIVE: Deploying Dual-Drones for {restaurant_name} {location}...")
+    
+    prompt_a = "CRITICAL: To bypass Cloudflare bot protection, you MUST explicitly target secondary academic and nutrition databases. Specifically search domains like menustat.org and fastfoodnutrition.org. Do NOT rely on the official restaurant homepage."
+    prompt_b = "CRITICAL: To bypass Cloudflare bot protection, you MUST explicitly search for '.pdf allergen' documents and target the domain nutritionix.com. Do NOT rely on the official restaurant homepage."
+
+    # Fire both drones concurrently
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_a = executor.submit(_drone_worker, restaurant_name, location, prompt_a, "DRONE A (ACADEMIC)")
+        future_b = executor.submit(_drone_worker, restaurant_name, location, prompt_b, "DRONE B (NUTRITIONIX/PDF)")
+        
+        result_a = future_a.result()
+        result_b = future_b.result()
+
+    combined_data = result_a + result_b
+    if not combined_data.strip():
+        print("🟡 LAYER 2 FAILED: Both Drones could not locate proprietary data on the open web.")
+        return ""
+        
+    # Quality gate: response must be substantial structured data
+    if len(combined_data) < 1000 or combined_data.count(':') < 5:
+        print(f"🟡 LAYER 2 INSUFFICIENT: Response lacked structured ingredient data. Falling to Layer 3 Synthesis.")
+        return ""
+        
+    return f"DUAL-DRONE PERPLEXITY DATA:\n{combined_data}"
+
+def layer2_deep_crawl(restaurant_name: str, location: str) -> str:
+    """LAYER 2 (DEEP): Uses Jina Web Search to aggressively scrape Javascript-rendered sites."""
+    # We prefer Jina because it searches AND renders DOM for free-text natively
+    if not JINA_API_KEY:
+        print("🔵 DEEP CRAWL SKIPPED: Missing JINA_API_KEY. Falling back to Dual-Drone.")
+        return layer2_perplexity(restaurant_name, location)
+
+    print(f"🟣 DEEP CRAWL ACTIVE: Jina DOM-Rendering Drone for {restaurant_name} {location}...")
+    try:
+        headers = {
+            "Authorization": f"Bearer {JINA_API_KEY}",
+            "X-Target-Selector": "body"
+        }
+        query = f"{restaurant_name} official allergen menu ingredients"
+        response = requests.get(f"https://s.jina.ai/{query}", headers=headers, timeout=20)
+        
+        data = response.text
+        if len(data) < 500:
+            print("🟡 DEEP CRAWL FAILED: Could not scrape DOM. Falling back to Dual-Drone.")
+            return layer2_perplexity(restaurant_name, location)
+            
+        return f"DEEP CRAWL JINA DATA:\n{data[:8000]}" # Cap to 8000 to avoid token blowouts
+    except Exception as e:
+        print(f"❌ DEEP CRAWL ERROR: {e}. Falling back to Dual-Drone.")
+        return layer2_perplexity(restaurant_name, location)
 
 
 def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
@@ -288,7 +335,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         return {}
 
 
-def analyze_allergens(restaurant_name: str, location: str, profiles: list, excluded_dishes: list = []) -> dict:
+def analyze_allergens(restaurant_name: str, location: str, profiles: list, excluded_dishes: list = [], deep_scan: bool = False) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     
     source_tag = "UNCERTAIN"
@@ -300,11 +347,14 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list, exclu
     executor = ThreadPoolExecutor(max_workers=1)
     future_social = executor.submit(layer2b_migraine_sentiment, restaurant_name, location)
     
-    # Layer 1 (Spoonacular) DISABLED — stale database replaced by live Perplexity scraping.
-    # Layer 2: Perplexity Live-Web Drone is now the PRIMARY data source.
-    context = layer2_perplexity(restaurant_name, location)
-    if context:
-        source_tag = "PERPLEXITY_LIVE_SCRAPE"
+    # Layer 2: Perplexity Dual Drone OR Deep Crawl
+    if deep_scan:
+        context = layer2_deep_crawl(restaurant_name, location)
+        source_tag = "DEEP_CRAWL_DOM_RENDER" if "DEEP CRAWL JINA DATA" in context else "PERPLEXITY_DUAL_DRONE"
+    else:
+        context = layer2_perplexity(restaurant_name, location)
+        if context:
+            source_tag = "PERPLEXITY_DUAL_DRONE"
     
     # Collect social drone result — hard 30s timeout, never blocks Layer 3
     try:

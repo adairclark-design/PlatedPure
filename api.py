@@ -31,6 +31,7 @@ class AnalyzeRequest(BaseModel):
     location: str
     profiles: List[Profile]
     excluded_dishes: List[str] = []  # Dish names already shown — used for "Continue the Search" pagination
+    deep_scan: bool = False  # Triggers the heavy Firecrawl Javascript DOM rendering pipeline
 
 @app.get("/ping")
 async def ping():
@@ -44,7 +45,7 @@ async def analyze_restaurant(request: AnalyzeRequest):
     Instructs the AI to search the web and deduce safe/unsafe menu matches.
     """
     try:
-        print(f"📡 API HIT: Analyzing '{request.restaurant_name}' for {len(request.profiles)} profiles. Excluded dishes: {len(request.excluded_dishes)}")
+        print(f"📡 API HIT: Analyzing '{request.restaurant_name}' for {len(request.profiles)} profiles. Excluded dishes: {len(request.excluded_dishes)} | Deep Scan: {request.deep_scan}")
         
         # Convert Pydantic objects to standard dictionaries for the backend tool
         profiles_list = [p.model_dump() for p in request.profiles]
@@ -54,7 +55,8 @@ async def analyze_restaurant(request: AnalyzeRequest):
             restaurant_name=request.restaurant_name,
             location=request.location,
             profiles=profiles_list,
-            excluded_dishes=request.excluded_dishes
+            excluded_dishes=request.excluded_dishes,
+            deep_scan=request.deep_scan
         )
         
         return result

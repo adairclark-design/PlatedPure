@@ -13,6 +13,7 @@ function App() {
   const [seenDishNames, setSeenDishNames] = useState([])
   const [canContinue, setCanContinue] = useState(false)
   const [continueLoading, setContinueLoading] = useState(false)
+  const [deepScan, setDeepScan] = useState(false)
 
   // Pre-warm the Render backend the moment the page loads.
   // Render spins down after inactivity — this silent ping wakes it up
@@ -37,7 +38,8 @@ function App() {
       location,
       profiles: [
         { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
-      ]
+      ],
+      deep_scan: deepScan
     }
 
     const doFetch = () => fetch(`${BASE_URL}/analyze`, {
@@ -82,7 +84,8 @@ function App() {
       profiles: [
         { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
       ],
-      excluded_dishes: seenDishNames
+      excluded_dishes: seenDishNames,
+      deep_scan: deepScan
     }
 
     try {
@@ -259,6 +262,24 @@ function App() {
                   inputMode="numeric"
                   style={{ width: '155px', flexShrink: 0 }}
                 />
+              </div>
+            </div>
+
+            <div style={{ marginTop: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <input
+                type="checkbox"
+                id="deepScanToggle"
+                checked={deepScan}
+                onChange={e => setDeepScan(e.target.checked)}
+                style={{ width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', accentColor: '#059669' }}
+              />
+              <div>
+                <label htmlFor="deepScanToggle" style={{ display: 'block', color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer', fontSize: '0.95rem' }}>
+                  Deep Crawl Mode <span style={{ fontSize: '0.75rem', background: 'var(--brand-amber)', color: '#fff', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>BETA</span>
+                </label>
+                <div style={{ color: 'var(--text-light)', fontSize: '0.8rem', marginTop: '2px', lineHeight: '1.4' }}>
+                  Enable to explicitly render hidden Javascript on official corporate sites. Bypasses Cloudflare but adds ~15s to search time. Use only if standard search fails.
+                </div>
               </div>
             </div>
 
