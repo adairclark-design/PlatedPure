@@ -706,7 +706,7 @@
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
-  color: var(--text-primary);
+  color: #f8fafc;
   white-space: nowrap;
   z-index: 10;
   box-shadow: 0 4px 16px rgba(0,0,0,0.35);

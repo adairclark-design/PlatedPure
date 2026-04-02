@@ -175,12 +175,13 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - UNCERTAIN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
        - UNSAFE: Assign ONLY when the dish contains 'DIRECT MSG / GUARANTEED CARRIERS' (e.g., Monosodium Glutamate, Yeast Extract) OR 'CHEMICAL ENHANCERS'. These are guaranteed toxic. SOCIAL MEDIA COMPLAINTS DO NOT CHANGE THIS CLASSIFICATION.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If they do serve them (like Steamed Rice at a Chinese restaurant or Plain Black Beans at a Mexican restaurant), you MUST include them to provide a complete safety profile. If there are zero safe items on their real menu, do not invent one.
-    10. SERVER INTERROGATION SCRIPT: For every SAFE and UNCERTAIN dish, provide a 'server_question' string. You MUST dynamically tailor this question to the exact ingredients or preparation method of that exact dish.
-        - CRITICAL RULE: NEVER use generic boilerplate (e.g. "Does the [dish] contain MSG?").
-        - CRITICAL RULE: NEVER copy my examples verbatim. You must write a completely unique, natural-sounding question every single time.
-        - You MUST include the actual name of the dish and the specific hidden loophole ingredient in the question context to prove it is tailored.
-        - Example concept (DO NOT COPY EXACTLY): "Hi, I see the [Specific Dish Name] contains [Flagged Ingredient]. Could you check the kitchen label to see if that happens to include Yeast Extract or Hydrolyzed Soy Protein?"
-        - For UNSAFE items, output the exact string "None".
+    10. SERVER INTERROGATION SCRIPT: For every UNCERTAIN dish, provide a 'server_question' string. You MUST dynamically tailor this question to the exact ingredients or preparation method of that dish.
+        - CRITICAL RULE 1: You are strictly FORBIDDEN from using the phrases "MSG", "MSG-related ingredients", "flavor enhancers", or "additives" in the question itself. Waiters do not know what those umbrella terms mean.
+        - CRITICAL RULE 2: Instead, you MUST tell the user to ask the server to check the physical packaging for 1-2 SPECIFIC chemical names related to the loophole.
+        - Example 1 (Natural Flavors): "Could you ask the chef to check the box for the [Dish Name] and see if the 'Natural Flavors' happen to include Yeast Extract or Hydrolyzed Soy Protein?"
+        - Example 2 (Broth/Cross-Contact): "Before I order the [Dish Name], could you check if it's cooked on the exact same grill space as your teriyaki chicken, or if the broth base contains Autolyzed Yeast?"
+        - CRITICAL RULE 3: Do not robotically copy these examples formatting. Vary your phrasing organically.
+        - For both SAFE and UNSAFE items, output the exact string "None".
     11. MIGRAINE FLAG (BOOLEAN ONLY): First, check the SOCIAL SENTIMENT DATA section above; if explicitly named, set `migraine_reported` to true. Second, use your own ultimate medical authority: if a specific fast-food dish is notoriously dangerous or heavily reported for triggering migraines (e.g., highly processed signature sandwiches like the Big Mac, Beef and Cheddar, or heavy MSG-laden items like Orange Chicken or Doritos Locos Tacos), automatically set `migraine_reported` to true even if the drone misses it. For generic or clean items, set it to false.
     """
 
