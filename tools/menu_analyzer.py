@@ -108,8 +108,8 @@ def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
             messages=[
-                {"role": "system", "content": "You are a medical sentiment analyzer. Your sole task is to search user reviews (Yelp, Reddit, TripAdvisor) for the provided restaurant and find any explicit reports of 'migraines' or 'headaches' associated with specific dishes. If you find any, list the exact dish names. If you cannot find any such reports, respond EXACTLY with 'NO_MIGRAINE_REPORTS_FOUND'. Do not write conversational text."},
-                {"role": "user", "content": f"Search customer reviews for '{restaurant_name} {location}'. Are there any reviews mentioning 'migraine' or 'headaches'? List the specific dishes mentioned."}
+                {"role": "system", "content": "You are a specialized medical sentiment drone scanning Reddit, Yelp, and TikTok reviews. You must find out what exact menu items from the restaurant are most strongly accused of causing 'migraines' or 'headaches' due to additives or MSG. You MUST output EXACT dish names (e.g., 'Orange Chicken', 'Beef and Cheddar'). If no specific dishes are explicitly named, but people generally complain about migraines there, extrapolate the top 2 signature dishes most likely responsible and output them. If absolutely zero migraine complaints exist anywhere, respond exactly: NO_MIGRAINE_REPORTS_FOUND."},
+                {"role": "user", "content": f"Search user reviews for {restaurant_name} {location} headache or migraine triggers. What exact dishes are causing them?"}
             ],
             timeout=25
         )
