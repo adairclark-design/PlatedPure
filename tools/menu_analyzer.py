@@ -316,20 +316,27 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     }
 
     try:
-        if not openai_client:
-            raise Exception("OpenAI API Key Missing")
+        if not openrouter_client:
+            raise Exception("OpenRouter API Key Missing")
 
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
+        # Inject the literal schema JSON string into the system prompt to force compliance for Anthropic models
+        schema_instructions = f"\n\nCRITICAL SYSTEM ROOT DIRECTIVE:\nYou MUST output ONLY RAW JSON. Do NOT wrap it in markdown. Do NOT write any preamble. Do NOT write any commentary. Your output must strictly adhere to the following JSON schema:\n{json.dumps(final_output_schema)}"
+        
+        response = openrouter_client.chat.completions.create(
+            model="anthropic/claude-3.7-sonnet",
             temperature=0.1,
             max_tokens=16384,
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": system_prompt + schema_instructions},
                 {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 30 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 25 results is a systemic failure."}
-            ],
-            response_format=final_output_schema
+            ] # We explicitly omit 'response_format' as OpenRouter hangs on strict json schemas for Anthropic
         )
-        return json.loads(response.choices[0].message.content)
+        
+        raw_output = response.choices[0].message.content
+        # Strip potential markdown wrappers that Anthropic occasionally includes
+        clean_json = raw_output.replace('```json', '').replace('```', '').strip()
+        
+        return json.loads(clean_json)
     except Exception as e:
         print(f"❌ Layer 3 Brain Failure: {e}")
         return {}
