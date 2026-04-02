@@ -16,45 +16,54 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 def layer1_spoonacular(restaurant_name: str) -> str:
-    """LAYER 1: The Database. Instant, mathematically precise ingredient arrays."""
+    """LAYER 1: The Database. Extracts verified dish names from Spoonacular for menu accuracy.
+    Returns a list of confirmed dish names so the AI can synthesize ingredients against them."""
     if not SPOONACULAR_API_KEY:
         print("🟡 LAYER 1 SKIPPED: Missing SPOONACULAR_API_KEY")
         return ""
         
     print(f"🟢 LAYER 1 ACTIVE: Querying Spoonacular for {restaurant_name}...")
     try:
-        # Step 1: Search for the restaurant menu items (increased to 25 to grab actual entrees)
-        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=25&apiKey={SPOONACULAR_API_KEY}"
+        search_url = f"https://api.spoonacular.com/food/menuItems/search?query={restaurant_name}&number=30&apiKey={SPOONACULAR_API_KEY}"
         search_resp = requests.get(search_url, timeout=5).json()
         menu_items = search_resp.get("menuItems", [])
         
         if not menu_items:
             print("🟡 LAYER 1 FAILED: Restaurant not found in database.")
             return ""
-            
-        compiled_text = f"SPOONACULAR OFFICIAL DATA FOR {restaurant_name}:\n"
         
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        # Extract dish names — Spoonacular macros are useless for MSG detection,
+        # but verified dish NAMES give the AI a real menu to synthesize against.
+        dish_names = [item.get("title", "").strip() for item in menu_items if item.get("title")]
         
-        def fetch_item_info(item):
-            try:
-                item_id = item.get("id")
-                info_url = f"https://api.spoonacular.com/food/menuItems/{item_id}?apiKey={SPOONACULAR_API_KEY}"
-                info_resp = requests.get(info_url, timeout=5).json()
-                nutrition_context = json.dumps(info_resp.get('nutrition', {})) 
-                return f"- Dish: {item.get('title')} | Macros: {nutrition_context}\n"
-            except Exception:
-                return ""
-                
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(fetch_item_info, item) for item in menu_items]
-            for future in as_completed(futures):
-                compiled_text += future.result()
+        # Quality gate: need at least 5 distinct dish names to be useful
+        if len(dish_names) < 5:
+            print(f"🟡 LAYER 1 INSUFFICIENT: Only {len(dish_names)} dish names found.")
+            return ""
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_names = []
+        for name in dish_names:
+            if name.lower() not in seen:
+                seen.add(name.lower())
+                unique_names.append(name)
+        
+        compiled_text = (
+            f"VERIFIED MENU ITEMS FROM SPOONACULAR DATABASE FOR {restaurant_name}:\n"
+            f"The following are CONFIRMED real dishes on the {restaurant_name} menu. "
+            f"You MUST analyze ONLY these exact dishes — do not add or invent any others.\n"
+        )
+        for name in unique_names:
+            compiled_text += f"- {name}\n"
             
+        print(f"🟢 LAYER 1 SUCCESS: Found {len(unique_names)} verified dish names.")
         return compiled_text
+        
     except Exception as e:
         print(f"❌ LAYER 1 ERROR: {e}")
         return ""
+
 
 
 def layer2_perplexity(restaurant_name: str, location: str) -> str:
@@ -116,7 +125,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
     5. USER-FRIENDLY INFERENCE (NO 'TIER' JARGON): Explain the risk of the 'ingredients' array in plain, simple English. DO NOT use the word 'Tier' or 'Tier 1/2/3'. Instead, say exactly why it's harmful, e.g. "Natural Flavors is a high-risk hidden additive," or "Yeast Extract is a guaranteed MSG carrier." If it is safe, say "Contains no MSG-related ingredients."
-    6. STRICT FIDELITY + DENSITY: If SOURCE is 'SPOONACULAR_DB' or 'PERPLEXITY_LIVE_SCRAPE', ONLY output the exact dishes from BACKGROUND CONTEXT. If SOURCE is 'COMMERCIAL_SYNTHESIS', generate the 12-16 most famous, real menu items for that exact restaurant. You MUST ensure a diverse mix: include flagship entrees, but you MUST also explicitly include the plain, unprocessed side dishes (e.g., steamed rice, plain baked potatoes, steamed vegetables) that the restaurant is known to serve.
+    6. STRICT FIDELITY + DENSITY: 
+       - If SOURCE is 'SPOONACULAR_DB': The BACKGROUND CONTEXT contains a verified list of CONFIRMED real dish names from Spoonacular. You MUST analyze ONLY those exact dish names — no additions or substitutions. For each named dish, synthesize the standard commercial ingredient formulation used at that restaurant and classify for MSG risk.
+       - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim.
+       - If SOURCE is 'COMMERCIAL_SYNTHESIS': Generate the 12-16 most famous real menu items for that exact restaurant. MUST include a diverse mix of entrees AND the plain unprocessed sides (e.g. steamed rice, plain veggies) that the restaurant is known to serve.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. ONLY output true food items: entrees, appetizers, desserts, and sides.
     8. EVIDENCE-BASED CLASSIFICATION - CRITICAL RULE:
        - SAFE: Assign ONLY when the ingredients array is 100% clean (no MSG definitions). Simple, unprocessed items MUST be SAFE with HIGH confidence.
