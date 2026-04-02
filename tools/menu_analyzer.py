@@ -79,7 +79,7 @@ def layer2_perplexity(restaurant_name: str, location: str) -> str:
             model="perplexity/sonar",
             messages=[
                 {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Return ONLY fully assembled, complete menu items (e.g., 'Big Mac', 'Quarter Pounder'). Do NOT output individual raw components, condiments, patties, or sauces like 'Mustard' or 'Lettuce'. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
-                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 fully assembled dishes if possible. Exclude mere condiments."}
+                {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name} located near {location}. Search menustat.org freethenation.com and the restaurant's official allergen PDF. Where relevant, look for any location-specific menu items for the {location} area. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 40 fully assembled dishes if possible. Exclude mere condiments."}
             ],
             timeout=30
         )
@@ -109,7 +109,7 @@ def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
             model="perplexity/sonar",
             messages=[
                 {"role": "system", "content": "You are a specialized medical sentiment drone scanning Reddit, Yelp, and TikTok reviews. You must find out what exact menu items from the restaurant are most strongly accused of causing 'migraines' or 'headaches' due to additives or MSG. You MUST output EXACT dish names (e.g., 'Orange Chicken', 'Beef and Cheddar'). If no specific dishes are explicitly named, but people generally complain about migraines there, extrapolate the top 2 signature dishes most likely responsible and output them. If absolutely zero migraine complaints exist anywhere, respond exactly: NO_MIGRAINE_REPORTS_FOUND."},
-                {"role": "user", "content": f"Search user reviews for {restaurant_name} {location} headache or migraine triggers. What exact dishes are causing them?"}
+                {"role": "user", "content": f"Search user reviews for {restaurant_name} near {location} for headache or migraine triggers. What exact dishes are causing them?"}
             ],
             timeout=25
         )
@@ -125,7 +125,7 @@ def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
         return "SOCIAL SENTIMENT: Migraine Social Drone Failed"
 
 
-def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, used_source: str, social_sentiment: str = "") -> dict:
+def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, used_source: str, social_sentiment: str = "", excluded_dishes: list = []) -> dict:
     """LAYER 3: The Brain. Takes context from Layer 1/2, or falls back to Commercial Baseline Synthesis if empty."""
     print(f"🟠 OVERARCHING BRAIN: Booting GPT-4o JSON Compiler (Data Source: {used_source})")
     
@@ -183,6 +183,12 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         - CRITICAL RULE 3: Do not robotically copy these examples formatting. Vary your phrasing organically.
         - For both SAFE and UNSAFE items, output the exact string "None".
     11. MIGRAINE FLAG (BOOLEAN ONLY): First, check the SOCIAL SENTIMENT DATA section above; if explicitly named, set `migraine_reported` to true. Second, use your own ultimate medical authority: if a specific fast-food dish is notoriously dangerous or heavily reported for triggering migraines (e.g., highly processed signature sandwiches like the Big Mac, Beef and Cheddar, or heavy MSG-laden items like Orange Chicken or Doritos Locos Tacos), automatically set `migraine_reported` to true even if the drone misses it. For generic or clean items, set it to false.
+    {f'''
+    12. PAGINATION — DO NOT REPEAT: A previous scan already returned the following dishes. You MUST NOT generate ANY dish whose name matches or closely resembles a name in this exclusion list:
+    {chr(10).join(f'    - {d}' for d in excluded_dishes)}
+    Generate the NEXT batch of up to 35 distinct dishes from this restaurant that are NOT in the exclusion list above. If fewer than 35 genuinely distinct items remain on the actual menu, output only what is left.
+    SAUCE SUPPRESSION: Because sauces were already shown in the first scan, output an empty `sauces` array: []
+    ''' if excluded_dishes else ''}
     """
 
 
@@ -280,7 +286,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         return {}
 
 
-def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> dict:
+def analyze_allergens(restaurant_name: str, location: str, profiles: list, excluded_dishes: list = []) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     
     source_tag = "UNCERTAIN"
@@ -318,7 +324,8 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list) -> di
         
     payload = layer3_gpt4o_compile(
         restaurant_name, context, profiles, source_tag,
-        social_sentiment=social_context
+        social_sentiment=social_context,
+        excluded_dishes=excluded_dishes
     )
     
     # Update telemetry

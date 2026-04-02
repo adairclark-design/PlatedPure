@@ -5,10 +5,14 @@ const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/analyze
 
 function App() {
   const [restaurantName, setRestaurantName] = useState('')
+  const [zipCode, setZipCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
   const [sauceOpen, setSauceOpen] = useState(null)
+  const [seenDishNames, setSeenDishNames] = useState([])
+  const [canContinue, setCanContinue] = useState(false)
+  const [continueLoading, setContinueLoading] = useState(false)
 
   // Pre-warm the Render backend the moment the page loads.
   // Render spins down after inactivity — this silent ping wakes it up
@@ -24,10 +28,13 @@ function App() {
     setLoading(true)
     setError(null)
     setResults(null)
+    setSeenDishNames([])
+    setCanContinue(false)
 
+    const location = zipCode.trim() ? zipCode.trim() : 'USA'
     const payload = {
       restaurant_name: restaurantName,
-      location: 'Oregon',
+      location,
       profiles: [
         { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
       ]
@@ -49,7 +56,12 @@ function App() {
       }
 
       if (!response.ok) throw new Error('Analysis failed. Please try again.')
-      setResults(await response.json())
+      const data = await response.json()
+      setResults(data)
+      // Seed the exclusion list with all dish names from this first batch
+      const names = (data.results || []).map(d => d.dish_name)
+      setSeenDishNames(names)
+      setCanContinue(names.length >= 10) // Only show Continue if we got a meaningful batch
     } catch (err) {
       if (err.message === 'Failed to fetch') {
         setError('Network connection refused (Failed to fetch). The AI engine is currently restarting for an update or experiencing heavy load. Please wait 60 seconds and try again.')
@@ -58,6 +70,43 @@ function App() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleContinue = async () => {
+    setContinueLoading(true)
+    const location = zipCode.trim() ? zipCode.trim() : 'USA'
+    const payload = {
+      restaurant_name: restaurantName,
+      location,
+      profiles: [
+        { name: 'MSG Scanner', restrictions: ['Strict MSG Detection (All Forms & Hidden Aliases)'] }
+      ],
+      excluded_dishes: seenDishNames
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!response.ok) throw new Error('Continuation failed.')
+      const data = await response.json()
+      const newDishes = data.results || []
+      // Append new dishes to existing results
+      setResults(prev => ({
+        ...prev,
+        results: [...(prev.results || []), ...newDishes]
+      }))
+      const newNames = newDishes.map(d => d.dish_name)
+      setSeenDishNames(prev => [...prev, ...newNames])
+      // Hide button if the menu is basically exhausted (≤8 new items returned)
+      setCanContinue(newDishes.length > 8)
+    } catch {
+      setError('Could not load more items. Please try again.')
+    } finally {
+      setContinueLoading(false)
     }
   }
 
@@ -190,14 +239,27 @@ function App() {
           <form onSubmit={handleSearch}>
             <div className="input-group">
               <div className="section-label">Search Restaurant or Grocery Brand</div>
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Search anything..."
-                value={restaurantName}
-                onChange={e => setRestaurantName(e.target.value)}
-                required
-              />
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'stretch' }}>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Search anything..."
+                  value={restaurantName}
+                  onChange={e => setRestaurantName(e.target.value)}
+                  style={{ flex: 1 }}
+                  required
+                />
+                <input
+                  type="text"
+                  className="search-input zip-input"
+                  placeholder="Zip Code (optional)"
+                  value={zipCode}
+                  onChange={e => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                  maxLength={5}
+                  inputMode="numeric"
+                  style={{ width: '155px', flexShrink: 0 }}
+                />
+              </div>
             </div>
 
             <button
@@ -357,6 +419,48 @@ function App() {
                 </div>
               )}
             </div>
+
+            {/* Continue the Search Button */}
+            {canContinue && (
+              <div style={{ textAlign: 'center', marginTop: '2rem', paddingBottom: '0.5rem' }}>
+                <button
+                  onClick={handleContinue}
+                  disabled={continueLoading}
+                  style={{
+                    background: continueLoading
+                      ? 'rgba(16,185,129,0.5)'
+                      : 'linear-gradient(135deg, #059669, #0d9488)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '14px',
+                    padding: '1rem 2.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    fontFamily: 'inherit',
+                    cursor: continueLoading ? 'not-allowed' : 'pointer',
+                    boxShadow: continueLoading ? 'none' : '0 4px 20px rgba(16,185,129,0.35)',
+                    transition: 'all 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                  }}
+                >
+                  {continueLoading ? (
+                    <>
+                      <span style={{ display: 'inline-block', animation: 'pulse 1s infinite' }}>⏳</span>
+                      Scanning Next Items...
+                    </>
+                  ) : (
+                    <>
+                      🔍 Continue the Search
+                    </>
+                  )}
+                </button>
+                <p style={{ marginTop: '0.6rem', fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                  Scan the next batch of menu items
+                </p>
+              </div>
+            )}
 
             <div className="disclaimer">
               <strong>⚠️ MEDICAL DISCLAIMER:</strong> This AI analysis is an investigative guide, not a guarantee. Menus, third-party sauces, and protocols change constantly. <strong>Always physically verify with your server</strong> using the provided questions before consuming any food.

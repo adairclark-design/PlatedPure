@@ -182,6 +182,12 @@
   box-shadow: 0 0 0 4px rgba(16,185,129,0.12), 0 2px 8px rgba(0,0,0,0.04);
 }
 
+.zip-input {
+  width: 155px !important;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
 /* ── Divider ── */
 .section-divider {
   height: 1px;

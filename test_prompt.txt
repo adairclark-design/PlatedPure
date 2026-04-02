@@ -1,0 +1,8 @@
+🟠 OVERARCHING BRAIN: Booting GPT-4o JSON Compiler (Data Source: COMMERCIAL_SYNTHESIS)
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+    res = layer3_gpt4o_compile('McDonalds', restrictions, scraper_data, 'COMMERCIAL_SYNTHESIS')
+  File "/Users/adairclark/Desktop/AntiGravity/PlatedPure/tools/menu_analyzer.py", line 133, in layer3_gpt4o_compile
+    if not context.strip():
+           ^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'strip'
