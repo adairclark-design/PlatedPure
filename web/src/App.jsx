@@ -87,14 +87,14 @@ function App() {
     const isPerplexity = dish.ingredient_source === 'PERPLEXITY_LIVE_SCRAPE';
     
     // UI badge configuration based on layer
-    let badgeText = '⚙️ Synthetic Commercial Formulation';
+    let badgeText = '🤖 Data Source: Industry Standard Ingredients';
     let badgeColor = 'var(--brand-sage)'; // Orange/Gray
     
     if (isSpoonacular) {
-      badgeText = '🟢 Spoonacular Database Verification';
+      badgeText = '📚 Data Source: Verified Recipe Database';
       badgeColor = 'var(--brand-emerald)';
     } else if (isPerplexity) {
-      badgeText = '🔵 Perplexity Live-Web Verification';
+      badgeText = '🌐 Data Source: Live Web Search (Restaurant Website)';
       badgeColor = '#3b82f6'; // Bright blue
     }
     
@@ -126,7 +126,7 @@ function App() {
         )}
 
         <div className="research-log-box">
-          <div className="log-header">🛡️ AI MATRIX LOG</div>
+          <div className="log-header">🔍 AI INGREDIENT ANALYSIS</div>
           
           {hasIngredients ? (
             <div className="verified-ingredients" style={{ marginBottom: '1rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
