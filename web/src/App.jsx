@@ -284,7 +284,24 @@ function App() {
                   <div className="unsafe-condensed-list glass-card">
                     {unsafeDishes.map((dish, idx) => (
                       <div className="unsafe-list-item" key={`unsf-${idx}`}>
-                        <div className="unsafe-name"><strong>{dish.dish_name}</strong></div>
+                        <div className="unsafe-name" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                          <strong>{dish.dish_name}</strong>
+                          {dish.migraine_reported && (
+                            <span style={{ 
+                              background: '#ef4444', 
+                              color: '#fff', 
+                              fontSize: '0.75rem', 
+                              padding: '2px 8px', 
+                              borderRadius: '4px', 
+                              fontWeight: 'bold',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              🤕 Migraine Reports
+                            </span>
+                          )}
+                        </div>
                         <div className="unsafe-reason">{dish.culinary_inference || dish.research_log || dish.reasoning}</div>
                       </div>
                     ))}
