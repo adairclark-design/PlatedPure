@@ -1,11 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/analyze').replace('/analyze', '')
 
 function App() {
   const [restaurantName, setRestaurantName] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
+
+  // Pre-warm the Render backend the moment the page loads.
+  // Render spins down after inactivity — this silent ping wakes it up
+  // while the user is still reading the page and typing their restaurant name.
+  useEffect(() => {
+    fetch(`${BASE_URL}/ping`).catch(() => {/* silent — just warming the server */})
+  }, [])
 
   const handleSearch = async (e) => {
     e.preventDefault()
@@ -23,13 +32,20 @@ function App() {
       ]
     }
 
+    const doFetch = () => fetch(`${BASE_URL}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
     try {
-      const API_ENDPOINT = import.meta.env.VITE_API_URL || 'http://localhost:8000/analyze'
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+      let response = await doFetch()
+
+      // If server returned an error (e.g. still waking from cold-start), retry once after 3s
+      if (!response.ok) {
+        await new Promise(r => setTimeout(r, 3000))
+        response = await doFetch()
+      }
 
       if (!response.ok) throw new Error('Analysis failed. Please try again.')
       setResults(await response.json())

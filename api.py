@@ -31,6 +31,11 @@ class AnalyzeRequest(BaseModel):
     location: str
     profiles: List[Profile]
 
+@app.get("/ping")
+async def ping():
+    """Lightweight health check used by the frontend to pre-warm the server on page load."""
+    return {"status": "awake"}
+
 @app.post("/analyze")
 async def analyze_restaurant(request: AnalyzeRequest):
     """
