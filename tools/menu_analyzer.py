@@ -316,11 +316,11 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     }
 
     try:
-        if not openrouter_client:
-            raise Exception("OpenRouter API Key Missing")
+        if not openai_client:
+            raise Exception("OpenAI API Key Missing")
 
-        response = openrouter_client.chat.completions.create(
-            model="anthropic/claude-3.7-sonnet",
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
             temperature=0.1,
             max_tokens=16384,
             messages=[
