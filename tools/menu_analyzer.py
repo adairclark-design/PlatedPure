@@ -195,9 +195,9 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     EXCLUSIVELY by the MSG Chemical Database below.
 
     THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
-    - DIRECT MSG / GUARANTEED CARRIERS: Monosodium Glutamate (E621), Yeast Extract, Autolyzed Yeast, Hydrolyzed Veg/Soy Protein, Calcium Caseinate, Torula Yeast.
-    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural Flavors, Artificial Flavors, Bouillon, Broth, Carrageenan, Maltodextrin, Malted Barley, Pectin, Soy Sauce.
-    - CHEMICAL ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
+    - DIRECT MSG / GUARANTEED CARRIERS: Monosodium Glutamate (E621), Glutamic Acid (E620), Glutamate (E620), Monopotassium Glutamate (E622), Calcium Glutamate (E623), Monoammonium Glutamate (E624), Magnesium Glutamate (E625), Natrium Glutamate, Vetsin, Ajinomoto, Yeast Extract, Autolyzed Yeast, Torula Yeast, Yeast Food, Yeast Nutrient, Hydrolyzed Vegetable Protein, Any Hydrolyzed Protein, Calcium Caseinate, Sodium Caseinate, Textured Protein (TVP), Soy Protein (Isolate/Concentrate), Whey Protein (Isolate/Concentrate).
+    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural/Artificial Flavors, Natural Beef/Chicken/Pork Flavoring, Bouillon, Broth, Stock, Carrageenan, Maltodextrin, Barley Malt, Malted Barley, Malt Extract, Pectin (E440), Soy Sauce, Soy Sauce Extract, Soy Milk, Gelatin, Citric Acid (E330), Citrate, Protease, Enzymes, "Enzyme Modified", "Fermented", "Protein Fortified", "Ultra-pasteurized", Modified Food Starch, Seasonings (if generic).
+    - CHEMICAL ENHANCERS: Disodium 5'-guanylate (E627), Disodium 5'-inosinate (E631), Disodium 5'-ribonucleotides (E635).
     
     CRITICAL BEHAVIORAL RULES:
     1. STRICT INGREDIENT REPORTING: You must provide a simple, flat array of atomic ingredient names for each dish. Each ingredient must be a SHORT, PLAIN ingredient name (e.g. 'Soy Sauce', 'Cornstarch', 'Natural Flavors'). NEVER write nested parenthetical sub-formulas. Each array item must be a single, atomic ingredient string. NO nesting. MINIMUM 6 ingredients per dish — a dish with 2 ingredients like 'Ground Beef, Taco Shell' is WRONG and incomplete.
