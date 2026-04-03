@@ -196,7 +196,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
 
     THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
     - DIRECT MSG / GUARANTEED CARRIERS: Monosodium Glutamate (E621), Yeast Extract, Autolyzed Yeast, Hydrolyzed Veg/Soy Protein, Calcium Caseinate, Torula Yeast.
-    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural Flavors, Artificial Flavors, Bouillon, Broth, Maltodextrin, Malted Barley, Pectin, Soy Sauce.
+    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural Flavors, Artificial Flavors, Bouillon, Broth, Carrageenan, Maltodextrin, Malted Barley, Pectin, Soy Sauce.
     - CHEMICAL ENHANCERS: Disodium 5'-guanylate, Disodium 5'-inosinate.
     
     CRITICAL BEHAVIORAL RULES:
