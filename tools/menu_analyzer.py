@@ -328,7 +328,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         response = openrouter_client.chat.completions.create(
             model=CLAUDE_MODEL,
             temperature=0.1,
-            max_tokens=16384,
+            max_tokens=8192,
             messages=[
                 {"role": "system", "content": system_prompt + schema_instructions},
                 {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 30 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 25 results is a systemic failure."}
@@ -368,7 +368,7 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list, exclu
     
     # Collect social drone result — hard 30s timeout, never blocks Layer 3
     try:
-        social_context = future_social.result(timeout=30)
+        social_context = future_social.result(timeout=5)
     except Exception:
         print("🟣 LAYER 2B TIMEOUT: Sentiment drone timed out, continuing without it.")
         social_context = "SOCIAL SENTIMENT: Drone timed out."
