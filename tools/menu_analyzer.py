@@ -14,7 +14,7 @@ SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
 JINA_API_KEY = os.environ.get("JINA_API_KEY", "")
-CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "anthropic/claude-sonnet-4.6")
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "anthropic/claude-haiku-4-5")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1") if OPENROUTER_API_KEY else None
@@ -205,6 +205,10 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     CRITICAL BEHAVIORAL RULES:
     1. INGREDIENT REPORTING: Provide a flat array of atomic ingredient names per dish (e.g. 'Soy Sauce', 'Natural Flavors'). No nested sub-formulas. MINIMUM 6 ingredients for UNCERTAIN/UNSAFE dishes. For SAFE dishes: minimum 4, maximum 8 key ingredients — do not pad with obvious filler.
     2. COMMERCIAL BASELINE DEPTH: For every dish penetrate to the actual chemical supply-chain level. Example: "Taco Bell Seasoned Beef" → [Ground Beef, Yeast Extract, Natural Flavors, Maltodextrin, Spices, Salt, Chili Pepper]. If a dish has pre-made sauces/marinades, enumerate their chemical sub-components. Do NOT auto-inject Yeast Extract or MSG unless it is a definitive industry standard for that chain — allow Natural Flavors and Soy Sauce to stand alone where ambiguous (correctly triggers UNCERTAIN).
+    2b. SUB-INGREDIENT EXPANSION (CRITICAL): NEVER list a sauce, marinade, seasoning blend, or broth as a single opaque ingredient name. You MUST expand it into its atomic chemical sub-components.
+        WRONG:   ["Chicken", "Orange Sauce", "Vegetable Oil"]
+        CORRECT: ["Chicken", "Soy Sauce", "Sugar", "Yeast Extract", "Modified Food Starch", "Natural Flavors", "Chili Pepper", "Vegetable Oil"]
+        Apply this to every sauce, marinade, batter, seasoning blend, and broth across all dishes.
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
     5. INFERENCE COPY: Write `culinary_inference` in plain English explaining the risk or safety of the dish. ONE sentence, maximum 20 words. No jargon, no 'Tier' references. Examples: "Yeast Extract is a guaranteed MSG carrier." / "Contains no MSG-related ingredients."
@@ -323,21 +327,47 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
             "\nAll field names are required. status must be exactly SAFE, UNCERTAIN, or UNSAFE. confidence must be HIGH or LOW."
         )
         
-        response = openrouter_client.chat.completions.create(
-            model=CLAUDE_MODEL,
-            temperature=0.1,
-            max_tokens=8192,
-            messages=[
-                {"role": "system", "content": system_prompt + schema_instructions},
-                {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 15 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 12 results is a systemic failure."}
-            ] # We explicitly omit 'response_format' as OpenRouter hangs on strict json schemas for Anthropic
-        )
-        
-        raw_output = response.choices[0].message.content
-        # Strip potential markdown wrappers that Anthropic occasionally includes
-        clean_json = raw_output.replace('```json', '').replace('```', '').strip()
-        
-        return json.loads(clean_json)
+        FALLBACK_MODEL = "anthropic/claude-sonnet-4.6"
+
+        def call_layer3(model, attempt=1):
+            """Single Layer 3 call. Returns parsed dict or raises."""
+            print(f"🟠 LAYER 3 ACTIVE: {'Falling back strictly to Commercial Baseline Synthesis.' if not context else 'Compiling with live context.'} [model={model}, attempt={attempt}]")
+            resp = openrouter_client.chat.completions.create(
+                model=model,
+                temperature=0.1,
+                max_tokens=8192,
+                messages=[
+                    {"role": "system", "content": system_prompt + schema_instructions},
+                    {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 15 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 12 results is a systemic failure."}
+                ]
+            )
+            raw = resp.choices[0].message.content
+            if not raw or not raw.strip():
+                raise ValueError(f"Empty response from {model}")
+            clean = raw.replace('```json', '').replace('```', '').strip()
+            return json.loads(clean)
+
+        # Attempt 1: primary model (Haiku)
+        try:
+            return call_layer3(CLAUDE_MODEL, attempt=1)
+        except (ValueError, Exception) as e1:
+            print(f"⚠️  Layer 3 attempt 1 failed ({CLAUDE_MODEL}): {e1}")
+
+        # Attempt 2: retry same model once (transient empty-response quirk)
+        try:
+            return call_layer3(CLAUDE_MODEL, attempt=2)
+        except (ValueError, Exception) as e2:
+            print(f"⚠️  Layer 3 attempt 2 failed ({CLAUDE_MODEL}): {e2}")
+
+        # Attempt 3: fall back to Sonnet if primary model keeps failing
+        if CLAUDE_MODEL != FALLBACK_MODEL:
+            try:
+                print(f"🔴 Escalating to fallback model: {FALLBACK_MODEL}")
+                return call_layer3(FALLBACK_MODEL, attempt=1)
+            except Exception as e3:
+                print(f"❌ Layer 3 fallback also failed: {e3}")
+
+        return {}
     except Exception as e:
         print(f"❌ Layer 3 Brain Failure: {e}")
         return {}
