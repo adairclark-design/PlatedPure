@@ -14,6 +14,7 @@ SPOONACULAR_API_KEY = os.environ.get("SPOONACULAR_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
 JINA_API_KEY = os.environ.get("JINA_API_KEY", "")
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "anthropic/claude-sonnet-4.6")
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 openrouter_client = OpenAI(api_key=OPENROUTER_API_KEY, base_url="https://openrouter.ai/api/v1") if OPENROUTER_API_KEY else None
@@ -74,6 +75,7 @@ def _drone_worker(restaurant_name: str, location: str, target_instructions: str,
     try:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
+            max_tokens=4096,
             messages=[
                 {"role": "system", "content": "You are a precise ingredient extraction robot. Your sole task is to output ONLY the raw ingredient lists from a restaurant's official allergen document or menu data. Return ONLY fully assembled, complete menu items (e.g., 'Big Mac', 'Quarter Pounder'). Do NOT output individual raw components, condiments, patties, or sauces like 'Mustard' or 'Lettuce'. Do NOT write any paragraphs, commentary, or explanations about where to find the data. If you find ingredients, list them in this format: 'Dish Name: Ingredient1, Ingredient2, Ingredient3'. If you cannot find specific ingredients, respond with exactly: INSUFFICIENT_DATA"},
                 {"role": "user", "content": f"Extract the exact ingredient list for: {restaurant_name} located near {location}. {target_instructions} Where relevant, look for any location-specific menu items for the {location} area. Return ONLY lines in the format: 'Dish Name: Ingredient1, Ingredient2'. Minimum 20 fully assembled dishes if possible. Exclude mere condiments."}
@@ -153,6 +155,7 @@ def layer2b_migraine_sentiment(restaurant_name: str, location: str) -> str:
     try:
         response = openrouter_client.chat.completions.create(
             model="perplexity/sonar",
+            max_tokens=4096,
             messages=[
                 {"role": "system", "content": "You are a specialized medical sentiment drone scanning Reddit, Yelp, and TikTok reviews. You must find out what exact menu items from the restaurant are most strongly accused of causing 'migraines' or 'headaches' due to additives or MSG. You MUST output EXACT dish names (e.g., 'Orange Chicken', 'Beef and Cheddar'). If no specific dishes are explicitly named, but people generally complain about migraines there, extrapolate the top 2 signature dishes most likely responsible and output them. If absolutely zero migraine complaints exist anywhere, respond exactly: NO_MIGRAINE_REPORTS_FOUND."},
                 {"role": "user", "content": f"Search user reviews for {restaurant_name} near {location} for headache or migraine triggers. What exact dishes are causing them?"}
@@ -323,7 +326,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         schema_instructions = f"\n\nCRITICAL SYSTEM ROOT DIRECTIVE:\nYou MUST output ONLY RAW JSON. Do NOT wrap it in markdown. Do NOT write any preamble. Do NOT write any commentary. Your output must strictly adhere to the following JSON schema:\n{json.dumps(final_output_schema)}"
         
         response = openrouter_client.chat.completions.create(
-            model="anthropic/claude-3.7-sonnet",
+            model=CLAUDE_MODEL,
             temperature=0.1,
             max_tokens=16384,
             messages=[

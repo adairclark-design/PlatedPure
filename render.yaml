@@ -9,3 +9,11 @@ services:
         value: 3.11.0
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: anthropic/claude-sonnet-4.6
+      - key: JINA_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
