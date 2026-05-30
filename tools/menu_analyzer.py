@@ -216,7 +216,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     6. STRICT FIDELITY + DENSITY: 
        - If SOURCE is 'SPOONACULAR_DB': You MUST analyze and synthesize ingredients for EVERY SINGLE DISH provided in the background context. DO NOT SKIP ANY DISH. If there are 35 dishes listed, you MUST output an array of 35 items. Skipping dishes is a critical system failure.
        - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim. Output EVERY SINGLE ONE.
-       - If SOURCE is 'COMMERCIAL_SYNTHESIS': You MUST generate exactly 30 to 35 most famous real menu items for that exact restaurant. Outputting fewer than 25 items is a critical systemic failure. INCLUDE a diverse mix of entrees AND the plain unprocessed sides.
+       - If SOURCE is 'COMMERCIAL_SYNTHESIS': You MUST generate exactly 15 to 20 most famous real menu items for that exact restaurant. Outputting fewer than 12 items is a critical systemic failure. INCLUDE a diverse mix of entrees AND the plain unprocessed sides.
     7. STRICT FILTERING: Drop all soft drinks, sodas, and generic beverages. Furthermore, DROP all individual raw ingredients, fragmented components, and solo condiments (e.g., 'Lettuce', 'Mustard', 'Sauce', 'Pattie'). ONLY output true full food dishes: completely assembled entrees, appetizers, desserts, and side-dishes.
     7b. SAUCE SAFETY PANEL (SEPARATE ARRAY): Separately, you MUST populate the top-level `sauces` array with ALL dipping sauces, condiments, and dressings available at this restaurant (e.g. Ketchup, Ranch, BBQ Sauce, Honey Mustard, Secret Sauce, Buffalo Sauce, Sriracha). For each sauce, classify it as SAFE, UNCERTAIN, or UNSAFE using the exact same MSG Chemical Database rules. Provide a one-sentence reason. Aim for 6–12 sauces. This array is COMPLETELY SEPARATE from the main `results` dish array.
     8. EVIDENCE-BASED CLASSIFICATION — THIS IS THE ONLY RULE THAT DETERMINES STATUS:
@@ -331,7 +331,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
             max_tokens=8192,
             messages=[
                 {"role": "system", "content": system_prompt + schema_instructions},
-                {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 30 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 25 results is a systemic failure."}
+                {"role": "user", "content": f"Compile the final STRICT json payload for {restaurant_name} using the context provided. CRITICAL: If Data Source is COMMERCIAL_SYNTHESIS, you MUST generate at least 15 item objects in your results array. Do not be lazy. If Data Source is SPOONACULAR/PERPLEXITY, extract every single dish provided without skipping any. Generating fewer than 12 results is a systemic failure."}
             ] # We explicitly omit 'response_format' as OpenRouter hangs on strict json schemas for Anthropic
         )
         
@@ -345,13 +345,17 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         return {}
 
 
-def analyze_allergens(restaurant_name: str, location: str, profiles: list, excluded_dishes: list = [], deep_scan: bool = False) -> dict:
+def analyze_allergens(restaurant_name: str, location: str, profiles: list, excluded_dishes: list = [], deep_scan: bool = False, status_callback=None) -> dict:
     from concurrent.futures import ThreadPoolExecutor
     
     source_tag = "UNCERTAIN"
     context = ""
     social_context = ""
     
+    # Emit status: Layer 2 starting
+    if status_callback:
+        status_callback("searching", "🔵 Scanning web sources for menu data...")
+
     # Launch social sentiment drone immediately in the background
     # It runs while Layers 1 and 2 do their sequential work
     executor = ThreadPoolExecutor(max_workers=1)
@@ -375,6 +379,13 @@ def analyze_allergens(restaurant_name: str, location: str, profiles: list, exclu
     finally:
         executor.shutdown(wait=False)
     
+    # Emit status: Layer 3 starting
+    if status_callback:
+        if context:
+            status_callback("analyzing", "🌐 Web data found — AI analyzing chemical composition...")
+        else:
+            status_callback("analyzing", "🧪 AI Brain synthesizing commercial ingredient baseline...")
+
     # Layer 3 / Final Compilation
     if not context:
         source_tag = "COMMERCIAL_SYNTHESIS"

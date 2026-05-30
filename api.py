@@ -1,10 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List
 import uvicorn
+import asyncio
 import sys
 import os
+import json as json_mod
 
 # Ensure the tools directory is accessible for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -64,6 +67,61 @@ async def analyze_restaurant(request: AnalyzeRequest):
     except Exception as e:
         print(f"❌ API ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="The AI Analyzer encountered an unexpected error.")
+
+@app.post("/analyze-stream")
+async def analyze_restaurant_stream(request: AnalyzeRequest):
+    """
+    SSE streaming version of /analyze. Emits live status events during
+    each pipeline phase so the frontend can show real-time progress.
+    """
+    loop = asyncio.get_event_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+
+    def status_callback(phase: str, message: str):
+        """Called from the sync worker thread — pushes status into the async queue."""
+        loop.call_soon_threadsafe(queue.put_nowait, {"type": "status", "phase": phase, "message": message})
+
+    async def event_generator():
+        profiles_list = [p.model_dump() for p in request.profiles]
+
+        async def run_analysis():
+            try:
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: analyze_allergens(
+                        restaurant_name=request.restaurant_name,
+                        location=request.location,
+                        profiles=profiles_list,
+                        excluded_dishes=request.excluded_dishes,
+                        deep_scan=request.deep_scan,
+                        status_callback=status_callback,
+                    )
+                )
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "result", "data": result})
+            except Exception as e:
+                print(f"❌ STREAM ERROR: {e}")
+                loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "message": str(e)})
+            finally:
+                loop.call_soon_threadsafe(queue.put_nowait, None)  # sentinel
+
+        asyncio.create_task(run_analysis())
+
+        while True:
+            item = await queue.get()
+            if item is None:
+                yield "data: [DONE]\n\n"
+                break
+            yield f"data: {json_mod.dumps(item)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        }
+    )
 
 if __name__ == "__main__":
     # Boot up the Uvicorn server automatically if run via `python api.py`

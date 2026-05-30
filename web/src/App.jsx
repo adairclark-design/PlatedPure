@@ -7,6 +7,7 @@ function App() {
   const [restaurantName, setRestaurantName] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('')
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
   const [sauceOpen, setSauceOpen] = useState(null)
@@ -27,6 +28,7 @@ function App() {
     if (!restaurantName.trim()) return
 
     setLoading(true)
+    setStatusMessage('🔵 Connecting to AI engine...')
     setError(null)
     setResults(null)
     setSeenDishNames([])
@@ -42,36 +44,59 @@ function App() {
       deep_scan: deepScan
     }
 
-    const doFetch = () => fetch(`${BASE_URL}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
     try {
-      let response = await doFetch()
-
-      // If server returned an error (e.g. still waking from cold-start), retry once after 3s
-      if (!response.ok) {
-        await new Promise(r => setTimeout(r, 3000))
-        response = await doFetch()
-      }
+      const response = await fetch(`${BASE_URL}/analyze-stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
       if (!response.ok) throw new Error('Analysis failed. Please try again.')
-      const data = await response.json()
-      setResults(data)
-      // Seed the exclusion list with all dish names from this first batch
-      const names = (data.results || []).map(d => d.dish_name)
-      setSeenDishNames(names)
-      setCanContinue(names.length >= 10) // Only show Continue if we got a meaningful batch
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const events = buffer.split('\n\n')
+        buffer = events.pop() // hold incomplete trailing event
+
+        for (const eventText of events) {
+          const dataLine = eventText.split('\n').find(l => l.startsWith('data: '))
+          if (!dataLine) continue
+          const rawData = dataLine.slice(6).trim()
+          if (rawData === '[DONE]') break
+
+          try {
+            const event = JSON.parse(rawData)
+            if (event.type === 'status') {
+              setStatusMessage(event.message)
+            } else if (event.type === 'result') {
+              setResults(event.data)
+              const names = (event.data.results || []).map(d => d.dish_name)
+              setSeenDishNames(names)
+              setCanContinue(names.length >= 10)
+            } else if (event.type === 'error') {
+              throw new Error(event.message)
+            }
+          } catch (parseErr) {
+            if (parseErr.message && !parseErr.message.includes('JSON')) throw parseErr
+          }
+        }
+      }
     } catch (err) {
       if (err.message === 'Failed to fetch') {
-        setError('Network connection refused (Failed to fetch). The AI engine is currently restarting for an update or experiencing heavy load. Please wait 60 seconds and try again.')
+        setError('Network connection refused. The AI engine is restarting. Please wait 60 seconds and try again.')
       } else {
         setError(err.message)
       }
     } finally {
       setLoading(false)
+      setStatusMessage('')
     }
   }
 
@@ -133,7 +158,7 @@ function App() {
   const uncertainDishes = results?.results?.filter(d => d.status.includes('UNCERTAIN'))   || []
   const unsafeDishes  = results?.results?.filter(d => d.status.includes('UNSAFE'))    || []
 
-  const renderDishCard = (dish, key) => {
+  const renderDishCard = (dish, key, globalIndex = 0) => {
     // Determine if we have ingredient data
     const hasIngredients = Array.isArray(dish.ingredients) && dish.ingredients.length > 0;
     const isSpoonacular = dish.ingredient_source === 'SPOONACULAR_DB';
@@ -152,7 +177,9 @@ function App() {
     }
     
     return (
-      <div key={key} className={`glass-card dish-card ${getDishClass(dish.status)}`}>
+      <div key={key}
+           className={`glass-card dish-card ${getDishClass(dish.status)} card-reveal`}
+           style={{ animationDelay: `${globalIndex * 0.07}s` }}>
         <div className="dish-header">
           <h3 className="dish-name">{dish.dish_name}</h3>
           <span className={`dish-status ${getBadgeClass(dish.status)}`}>
@@ -298,8 +325,14 @@ function App() {
         {/* Loading State */}
         {loading && (
           <div className="loading-skeleton">
+            <div className="loading-status-icon">
+              {statusMessage.startsWith('🔵') ? '🔵' :
+               statusMessage.startsWith('🌐') ? '🌐' :
+               statusMessage.startsWith('🧪') ? '🧪' : '⚡'}
+            </div>
             <h3>Gathering Menu Context &amp; Reasoning...</h3>
-            <p style={{ fontSize: '0.9rem' }}>Checking ingredients against your restrictions</p>
+            <p className="loading-status-msg">{statusMessage || 'Initializing scan...'}</p>
+            <div className="loading-bar"><div className="loading-bar-fill"></div></div>
           </div>
         )}
 
@@ -377,7 +410,7 @@ function App() {
                   <h3 className="tier-header" style={{ color: 'var(--brand-emerald)', marginBottom: '1rem', borderBottom: '2px solid var(--brand-emerald)', paddingBottom: '0.5rem' }}>
                     ✅ Top Safe Recommendations
                   </h3>
-                  {safeDishes.map((dish, idx) => renderDishCard(dish, `safe-${idx}`))}
+                  {safeDishes.map((dish, idx) => renderDishCard(dish, `safe-${idx}`, idx))}
                 </div>
               )}
 
@@ -395,7 +428,7 @@ function App() {
                   💬 Proceed With Caution
                 </h3>
                 {uncertainDishes.length > 0 ? (
-                  uncertainDishes.map((dish, idx) => renderDishCard(dish, `unc-${idx}`))
+                  uncertainDishes.map((dish, idx) => renderDishCard(dish, `unc-${idx}`, safeDishes.length + idx))
                 ) : (
                   <div className="glass-card dish-card dish-unknown" style={{ textAlign: 'center', opacity: 0.85 }}>
                     <h3 style={{ color: 'var(--brand-amber)', marginBottom: '0.5rem', fontSize: '1.2rem' }}>No Ambiguous Items Found</h3>
