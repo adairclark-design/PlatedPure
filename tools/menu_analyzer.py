@@ -197,22 +197,17 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
     It has ZERO influence on whether a dish is SAFE, UNCERTAIN, or UNSAFE. Classification is determined
     EXCLUSIVELY by the MSG Chemical Database below.
 
-    THE ABSOLUTE MSG CHEMICAL DATABASE (Identify all loopholes):
-    - DIRECT MSG / GUARANTEED CARRIERS: Monosodium Glutamate (E621), Glutamic Acid (E620), Glutamate (E620), Monopotassium Glutamate (E622), Calcium Glutamate (E623), Monoammonium Glutamate (E624), Magnesium Glutamate (E625), Natrium Glutamate, Vetsin, Ajinomoto, Yeast Extract, Autolyzed Yeast, Torula Yeast, Yeast Food, Yeast Nutrient, Hydrolyzed Vegetable Protein, Any Hydrolyzed Protein, Calcium Caseinate, Sodium Caseinate, Textured Protein (TVP), Soy Protein (Isolate/Concentrate), Whey Protein (Isolate/Concentrate).
-    - HIGH-RISK ADDITIVES / LOOPHOLES: Natural/Artificial Flavors, Natural Beef/Chicken/Pork Flavoring, Bouillon, Broth, Stock, Carrageenan, Maltodextrin, Barley Malt, Malted Barley, Malt Extract, Pectin (E440), Soy Sauce, Soy Sauce Extract, Soy Milk, Gelatin, Citric Acid (E330), Citrate, Protease, Enzymes, "Enzyme Modified", "Fermented", "Protein Fortified", "Ultra-pasteurized", Modified Food Starch, Seasonings (if generic).
-    - CHEMICAL ENHANCERS: Disodium 5'-guanylate (E627), Disodium 5'-inosinate (E631), Disodium 5'-ribonucleotides (E635).
+    MSG CHEMICAL DATABASE — flag any of these when found in ingredients:
+    DIRECT/GUARANTEED (→ UNSAFE): Monosodium Glutamate, Glutamic Acid, Glutamate, Monopotassium Glutamate, Calcium Glutamate, Monoammonium Glutamate, Magnesium Glutamate, Natrium Glutamate, Vetsin, Ajinomoto, Yeast Extract, Autolyzed Yeast, Torula Yeast, Yeast Food, Yeast Nutrient, Hydrolyzed Vegetable Protein, Hydrolyzed Protein, Calcium Caseinate, Sodium Caseinate, Textured Protein, Soy Protein Isolate, Whey Protein Isolate.
+    HIGH-RISK/LOOPHOLES (→ UNCERTAIN): Natural Flavors, Artificial Flavors, Natural Beef/Chicken/Pork Flavoring, Bouillon, Broth, Stock, Carrageenan, Maltodextrin, Barley Malt, Malt Extract, Pectin, Soy Sauce, Soy Sauce Extract, Soy Milk, Gelatin, Citric Acid, Protease, Enzymes, Enzyme Modified, Fermented, Modified Food Starch, generic Seasonings.
+    CHEMICAL ENHANCERS (→ UNSAFE): Disodium Guanylate, Disodium Inosinate, Disodium Ribonucleotides.
     
     CRITICAL BEHAVIORAL RULES:
-    1. STRICT INGREDIENT REPORTING: You must provide a simple, flat array of atomic ingredient names for each dish. Each ingredient must be a SHORT, PLAIN ingredient name (e.g. 'Soy Sauce', 'Cornstarch', 'Natural Flavors'). NEVER write nested parenthetical sub-formulas. Each array item must be a single, atomic ingredient string. NO nesting. MINIMUM 6 ingredients per dish — a dish with 2 ingredients like 'Ground Beef, Taco Shell' is WRONG and incomplete.
-    2. THE "COMMERCIAL BASELINE" SYNTHESIS — CRITICAL DEPTH RULE: You are an industrial food scientist with access to commercial supply-chain knowledge. For every dish, you MUST penetrate the ingredient label down to the actual chemical supply-chain level. Examples:
-       - "Taco Bell Seasoned Beef" → MUST list its components: Ground Beef, Yeast Extract, Natural Flavors, Maltodextrin, Spices, Salt, Chili Pepper, Paprika
-       - "KFC Grilled Chicken" → MUST include: Monosodium Glutamate, Salt, Spices in the seasoning blend
-       - "Generic Teriyaki Sauce" → MUST list: Soy Sauce, Sugar, Water, Cornstarch, Natural Flavors (NOTE: Here, 'Natural Flavors' triggers UNCERTAIN. Do not inject 'Yeast Extract' unless it is a definitive industry standard for that chain.)
-       - "House Vinaigrette" → MUST list: Vegetable Oil, Vinegar, Spices, Natural Flavors
-       If a dish has pre-made sauces, seasonings, or marinades, you MUST enumerate the chemical ingredients of those sub-components. MUST NOT auto-inject "Yeast Extract" or "MSG" into every single sauce unless it is a guaranteed industry standard for that chain. Allow "Natural Flavors" and "Soy Sauce" to stand alone for ambiguous items, which correctly triggers UNCERTAIN.
+    1. INGREDIENT REPORTING: Provide a flat array of atomic ingredient names per dish (e.g. 'Soy Sauce', 'Natural Flavors'). No nested sub-formulas. MINIMUM 6 ingredients for UNCERTAIN/UNSAFE dishes. For SAFE dishes: minimum 4, maximum 8 key ingredients — do not pad with obvious filler.
+    2. COMMERCIAL BASELINE DEPTH: For every dish penetrate to the actual chemical supply-chain level. Example: "Taco Bell Seasoned Beef" → [Ground Beef, Yeast Extract, Natural Flavors, Maltodextrin, Spices, Salt, Chili Pepper]. If a dish has pre-made sauces/marinades, enumerate their chemical sub-components. Do NOT auto-inject Yeast Extract or MSG unless it is a definitive industry standard for that chain — allow Natural Flavors and Soy Sauce to stand alone where ambiguous (correctly triggers UNCERTAIN).
     3. ASSIGN THE SOURCE ENUM: Set 'ingredient_source' exactly matching the provided DATA ACQUISITION SOURCE: "{used_source}".
     4. NO VAGUE HEDGING: The UI renders the 'ingredients' array as chemical chips. Be precise and flat.
-    5. USER-FRIENDLY INFERENCE (NO 'TIER' JARGON): Explain the risk of the 'ingredients' array in plain, simple English. DO NOT use the word 'Tier' or 'Tier 1/2/3'. Instead, say exactly why it's harmful, e.g. "Natural Flavors is a high-risk hidden additive," or "Yeast Extract is a guaranteed MSG carrier." If it is safe, say "Contains no MSG-related ingredients."
+    5. INFERENCE COPY: Write `culinary_inference` in plain English explaining the risk or safety of the dish. ONE sentence, maximum 20 words. No jargon, no 'Tier' references. Examples: "Yeast Extract is a guaranteed MSG carrier." / "Contains no MSG-related ingredients."
     6. STRICT FIDELITY + DENSITY: 
        - If SOURCE is 'SPOONACULAR_DB': You MUST analyze and synthesize ingredients for EVERY SINGLE DISH provided in the background context. DO NOT SKIP ANY DISH. If there are 35 dishes listed, you MUST output an array of 35 items. Skipping dishes is a critical system failure.
        - If SOURCE is 'PERPLEXITY_LIVE_SCRAPE': ONLY output the exact dishes with ingredients found in BACKGROUND CONTEXT verbatim. Output EVERY SINGLE ONE.
@@ -224,13 +219,7 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
        - UNCERTAIN: Assign when there is a 'High-Risk Additive / Loophole' (e.g., Natural Flavors, Bouillon, Soy Sauce) OR an ambiguous sauce/marinade present. These are "possibly safe" but require server verification.
        - UNSAFE: Assign ONLY when the dish contains 'DIRECT MSG / GUARANTEED CARRIERS' (e.g., Monosodium Glutamate, Yeast Extract) OR 'CHEMICAL ENHANCERS'. These are guaranteed toxic. SOCIAL MEDIA COMPLAINTS DO NOT CHANGE THIS CLASSIFICATION.
     9. NO GENERIC INJECTIONS: You MUST NOT invent or assume any safe options. ONLY output dishes that actually exist on the literal menu of the specific restaurant being searched. Do not add plain items unless that restaurant verifiably serves them. If they do serve them (like Steamed Rice at a Chinese restaurant or Plain Black Beans at a Mexican restaurant), you MUST include them to provide a complete safety profile. If there are zero safe items on their real menu, do not invent one.
-    10. SERVER INTERROGATION SCRIPT: For every UNCERTAIN dish, provide a 'server_question' string. You MUST dynamically tailor this question to the exact ingredients or preparation method of that dish.
-        - CRITICAL RULE 1: You are strictly FORBIDDEN from using the phrases "MSG", "MSG-related ingredients", "flavor enhancers", or "additives" in the question itself. Waiters do not know what those umbrella terms mean.
-        - CRITICAL RULE 2: Instead, you MUST tell the user to ask the server to check the physical packaging for 1-2 SPECIFIC chemical names related to the loophole.
-        - Example 1 (Natural Flavors): "Could you ask the chef to check the box for the [Dish Name] and see if the 'Natural Flavors' happen to include Yeast Extract or Hydrolyzed Soy Protein?"
-        - Example 2 (Broth/Cross-Contact): "Before I order the [Dish Name], could you check if it's cooked on the exact same grill space as your teriyaki chicken, or if the broth base contains Autolyzed Yeast?"
-        - CRITICAL RULE 3: Do not robotically copy these examples formatting. Vary your phrasing organically.
-        - For both SAFE and UNSAFE items, output the exact string "None".
+    10. SERVER QUESTION: For every UNCERTAIN dish, write a concise `server_question` (max 25 words) asking the server to check the physical packaging for 1-2 specific chemical names tied to the loophole ingredient. NEVER use the words "MSG", "MSG-related ingredients", "flavor enhancers", or "additives" — waiters don't know those terms. Ask about the specific chemical name instead (e.g. "Yeast Extract", "Autolyzed Yeast", "Hydrolyzed Soy Protein"). For SAFE and UNSAFE items output the string "None".
     11. MIGRAINE FLAG (BOOLEAN ONLY): First, check the SOCIAL SENTIMENT DATA section above; if explicitly named, set `migraine_reported` to true. Second, use your own ultimate medical authority: if a specific fast-food dish is notoriously dangerous or heavily reported for triggering migraines (e.g., highly processed signature sandwiches like the Big Mac, Beef and Cheddar, or heavy MSG-laden items like Orange Chicken or Doritos Locos Tacos), automatically set `migraine_reported` to true even if the drone misses it. For generic or clean items, set it to false.
     {f'''
     12. PAGINATION — DO NOT REPEAT: A previous scan already returned the following dishes. You MUST NOT generate ANY dish whose name matches or closely resembles a name in this exclusion list:
@@ -322,8 +311,17 @@ def layer3_gpt4o_compile(restaurant_name: str, context: str, profiles: list, use
         if not openrouter_client:
             raise Exception("OpenRouter API Key Missing")
 
-        # Inject the literal schema JSON string into the system prompt to force compliance for Anthropic models
-        schema_instructions = f"\n\nCRITICAL SYSTEM ROOT DIRECTIVE:\nYou MUST output ONLY RAW JSON. Do NOT wrap it in markdown. Do NOT write any preamble. Do NOT write any commentary. Your output must strictly adhere to the following JSON schema:\n{json.dumps(final_output_schema)}"
+        # Compact schema directive — much cheaper than injecting the full JSON schema object
+        schema_instructions = (
+            "\n\nOUTPUT RULES: Respond with RAW JSON only. No markdown, no preamble, no commentary."
+            "\nExact top-level structure:"
+            '\n{"restaurant":{"name":"string","search_context":"string"},'
+            '"telemetry":{"chars_scraped":0,"urls_crawled":0,"chemicals_checked":32},'
+            '"results":[{"dish_name":"string","status":"SAFE|UNCERTAIN|UNSAFE","flagged_by":["compound"],"ingredient_source":"string","ingredients":["string"],"culinary_inference":"string","server_question":"string","migraine_reported":false,"confidence":"HIGH|LOW"}],'
+            '"sauces":[{"name":"string","status":"SAFE|UNCERTAIN|UNSAFE","reason":"string"}],'
+            '"disclaimer":"string"}'
+            "\nAll field names are required. status must be exactly SAFE, UNCERTAIN, or UNSAFE. confidence must be HIGH or LOW."
+        )
         
         response = openrouter_client.chat.completions.create(
             model=CLAUDE_MODEL,
